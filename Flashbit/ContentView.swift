@@ -45,6 +45,38 @@ struct BookmarksView: View {
     @ObservedObject private var storage = StorageService.shared
     @State private var showSuccessToast: Bool = false
 
+    // Filter states
+    @State private var selectedCategory: BitCategory? = nil
+    @State private var sortNewestFirst: Bool = true
+    @State private var showFilters: Bool = false
+    @State private var startDate: Date = Calendar.current.date(byAdding: .month, value: -1, to: Date()) ?? Date()
+    @State private var endDate: Date = Date()
+    @State private var filterByDate: Bool = false
+
+    // Filtered and sorted bits
+    private var filteredBits: [Bit] {
+        var bits = storage.savedBits
+
+        // Filter by category
+        if let category = selectedCategory {
+            bits = bits.filter { $0.category == category }
+        }
+
+        // Filter by date range
+        if filterByDate {
+            bits = bits.filter { $0.publishedAt >= startDate && $0.publishedAt <= endDate }
+        }
+
+        // Sort
+        if sortNewestFirst {
+            bits.sort { $0.publishedAt > $1.publishedAt }
+        } else {
+            bits.sort { $0.publishedAt < $1.publishedAt }
+        }
+
+        return bits
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -52,7 +84,28 @@ struct BookmarksView: View {
                     if storage.savedBits.isEmpty {
                         emptyState
                     } else {
-                        savedList
+                        VStack(spacing: 0) {
+                            // Filter bar
+                            filterBar
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                                .background(Color.black)
+
+                            // Expanded filters
+                            if showFilters {
+                                expandedFilters
+                                    .padding(.horizontal)
+                                    .padding(.bottom, 8)
+                                    .background(Color.black)
+                            }
+
+                            // Saved list
+                            if filteredBits.isEmpty {
+                                noResultsView
+                            } else {
+                                savedList
+                            }
+                        }
                     }
                 }
                 .background(Color.black)
@@ -81,17 +134,14 @@ struct BookmarksView: View {
         .onAppear {
             if storage.showOnboardingComplete {
                 storage.showOnboardingComplete = false
-                // Longer delay before showing success
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                     withAnimation {
                         showSuccessToast = true
                     }
-                    // Hide after showing and navigate to Feed
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             showSuccessToast = false
                         }
-                        // Clear only bits saved during onboarding, then navigate to Feed
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                             storage.clearOnboardingSavedBits()
                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -103,6 +153,140 @@ struct BookmarksView: View {
             }
         }
     }
+
+    // MARK: - Filter Bar
+
+    private var filterBar: some View {
+        HStack {
+            // Filter toggle button
+            Button(action: {
+                withAnimation {
+                    showFilters.toggle()
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                    Text("Filter")
+                }
+                .font(.subheadline)
+                .foregroundColor(hasActiveFilters ? .blue : .white.opacity(0.7))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(hasActiveFilters ? Color.blue.opacity(0.2) : Color.white.opacity(0.1))
+                .cornerRadius(8)
+            }
+
+            Spacer()
+
+            // Sort toggle
+            Button(action: {
+                withAnimation {
+                    sortNewestFirst.toggle()
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: sortNewestFirst ? "arrow.down" : "arrow.up")
+                    Text(sortNewestFirst ? "Newest" : "Oldest")
+                }
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.7))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(8)
+            }
+
+            // Results count
+            Text("\(filteredBits.count) saved")
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.5))
+                .padding(.leading, 8)
+        }
+    }
+
+    private var hasActiveFilters: Bool {
+        selectedCategory != nil || filterByDate
+    }
+
+    // MARK: - Expanded Filters
+
+    private var expandedFilters: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Category filter
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Category")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        // All categories option
+                        FilterChip(
+                            title: "All",
+                            isSelected: selectedCategory == nil,
+                            action: { selectedCategory = nil }
+                        )
+
+                        ForEach(BitCategory.allCases, id: \.self) { category in
+                            FilterChip(
+                                title: category.rawValue,
+                                isSelected: selectedCategory == category,
+                                action: { selectedCategory = category }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Date range filter
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Date Range")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.6))
+
+                    Spacer()
+
+                    Toggle("", isOn: $filterByDate)
+                        .labelsHidden()
+                        .scaleEffect(0.8)
+                }
+
+                if filterByDate {
+                    HStack {
+                        DatePicker("From", selection: $startDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+
+                        Text("to")
+                            .foregroundColor(.white.opacity(0.6))
+
+                        DatePicker("To", selection: $endDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+                            .labelsHidden()
+                    }
+                    .font(.caption)
+                }
+            }
+
+            // Clear filters button
+            if hasActiveFilters {
+                Button(action: {
+                    selectedCategory = nil
+                    filterByDate = false
+                }) {
+                    Text("Clear all filters")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(12)
+    }
+
+    // MARK: - Views
 
     private var emptyState: some View {
         VStack(spacing: 20) {
@@ -121,14 +305,58 @@ struct BookmarksView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private var noResultsView: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 50))
+                .foregroundColor(.gray)
+
+            Text("No matching bits")
+                .font(.title3)
+                .foregroundColor(.white)
+
+            Text("Try adjusting your filters")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+
+            Button("Clear filters") {
+                selectedCategory = nil
+                filterByDate = false
+            }
+            .foregroundColor(.blue)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private var savedList: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                ForEach(storage.savedBits) { bit in
+                ForEach(filteredBits) { bit in
                     SavedBitCard(bit: bit)
                 }
             }
             .padding()
+        }
+    }
+}
+
+// MARK: - Filter Chip
+
+struct FilterChip: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption)
+                .fontWeight(isSelected ? .semibold : .regular)
+                .foregroundColor(isSelected ? .white : .white.opacity(0.7))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isSelected ? Color.blue : Color.white.opacity(0.1))
+                .cornerRadius(16)
         }
     }
 }

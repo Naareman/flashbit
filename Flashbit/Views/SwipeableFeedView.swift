@@ -38,13 +38,61 @@ struct SwipeableFeedView: View {
     private let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
     private let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
 
+    // Static articles for onboarding (independent from real news)
+    private static let onboardingArticles: [Bit] = [
+        Bit(
+            headline: "Welcome to Flashbit! This is how news will appear",
+            summary: "Each card shows you a bite-sized news update. You'll see the headline, a brief summary, and the source. Try tapping the right side to go to the next article!",
+            category: .tech,
+            source: "Flashbit Tutorial",
+            publishedAt: Date()
+        ),
+        Bit(
+            headline: "You can navigate back and forth easily",
+            summary: "Tap the left side to go back to previous articles. Tap the right side to move forward. It's that simple! Now try double-tapping anywhere to save this article.",
+            category: .world,
+            source: "Flashbit Tutorial",
+            publishedAt: Date()
+        ),
+        Bit(
+            headline: "Save articles you want to read later",
+            summary: "Double-tap any article to save it for later. You can find all your saved articles in the Saved tab. Let's go there now!",
+            category: .entertainment,
+            source: "Flashbit Tutorial",
+            publishedAt: Date()
+        )
+    ]
+
+    // Bits to display - uses onboarding articles when in tutorial mode
+    private var displayBits: [Bit] {
+        if !storage.hasCompletedOnboarding && onboardingStep >= 0 {
+            return Self.onboardingArticles
+        }
+        return sessionBits
+    }
+
     // Total items including the "caught up" card at the end
     private var totalItems: Int {
-        sessionBits.count + 1
+        displayBits.count + 1
     }
 
     private var isOnCaughtUpCard: Bool {
-        currentIndex >= sessionBits.count
+        currentIndex >= displayBits.count
+    }
+
+    // Remaining bits count for display
+    private var remainingBitsCount: Int {
+        max(0, displayBits.count - currentIndex - 1)
+    }
+
+    private var remainingBitsText: String {
+        if remainingBitsCount > 50 {
+            return "+50 bits left"
+        } else if remainingBitsCount == 1 {
+            return "1 bit left"
+        } else {
+            return "\(remainingBitsCount) bits left"
+        }
     }
 
     var body: some View {
@@ -52,21 +100,21 @@ struct SwipeableFeedView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                if !hasLoadedSession {
-                    // Show loading until session bits are loaded
+                if !hasLoadedSession && !isOnboarding {
+                    // Show loading until session bits are loaded (skip for onboarding)
                     loadingView
-                } else if sessionBits.isEmpty || isOnCaughtUpCard {
+                } else if displayBits.isEmpty || isOnCaughtUpCard {
                     // "You're all caught up" as its own story card
                     caughtUpCard
                 } else {
                     // Current news card
-                    BitCardView(bit: sessionBits[currentIndex])
+                    BitCardView(bit: displayBits[currentIndex])
                         .id(currentIndex)
                         .transition(.opacity)
                 }
 
                 // Tap zones - handles both single and double taps (only on article cards)
-                if !sessionBits.isEmpty && !isOnCaughtUpCard {
+                if !displayBits.isEmpty && !isOnCaughtUpCard {
                     HStack(spacing: 0) {
                         // Left tap zone - previous
                         Color.clear
@@ -82,12 +130,26 @@ struct SwipeableFeedView: View {
                     }
                 }
 
-                // Progress bar (Instagram Stories style) - only show when we have bits
-                if !sessionBits.isEmpty {
+                // Progress bar and remaining counter - only show when we have bits
+                if !displayBits.isEmpty {
                     VStack {
-                        progressBar
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 8)
+                        HStack {
+                            progressBar
+
+                            // Remaining bits counter (hide during onboarding)
+                            if !isOnboarding && !isOnCaughtUpCard {
+                                Text(remainingBitsText)
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.ultraThinMaterial)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 8)
                         Spacer()
                     }
                     .padding(.top, 44)
@@ -99,7 +161,7 @@ struct SwipeableFeedView: View {
                 }
 
                 // Interactive onboarding overlay
-                if isOnboarding && !sessionBits.isEmpty {
+                if isOnboarding && !displayBits.isEmpty {
                     onboardingOverlay(geometry: geometry)
                 }
 
@@ -218,8 +280,8 @@ struct SwipeableFeedView: View {
     }
 
     private func saveBit() {
-        guard !isOnCaughtUpCard, currentIndex < sessionBits.count else { return }
-        let bit = sessionBits[currentIndex]
+        guard !isOnCaughtUpCard, currentIndex < displayBits.count else { return }
+        let bit = displayBits[currentIndex]
 
         // Check if already saved
         if storage.isSaved(bit) {
