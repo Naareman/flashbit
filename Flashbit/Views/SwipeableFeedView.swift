@@ -45,21 +45,24 @@ struct SwipeableFeedView: View {
             summary: "Each card shows you a bite-sized news update. You'll see the headline, a brief summary, and the source. Try tapping the right side to go to the next article!",
             category: .tech,
             source: "Flashbit Tutorial",
-            publishedAt: Date()
+            publishedAt: Date(),
+            articleURL: URL(string: "https://example.com")
         ),
         Bit(
             headline: "You can navigate back and forth easily",
-            summary: "Tap the left side to go back to previous articles. Tap the right side to move forward. It's that simple! Now try double-tapping anywhere to save this article.",
+            summary: "Tap the left side to go back to previous articles. Tap the right side to move forward. Double-tap anywhere to save an article for later!",
             category: .world,
             source: "Flashbit Tutorial",
-            publishedAt: Date()
+            publishedAt: Date(),
+            articleURL: URL(string: "https://example.com")
         ),
         Bit(
-            headline: "Save articles you want to read later",
-            summary: "Double-tap any article to save it for later. You can find all your saved articles in the Saved tab. Let's go there now!",
+            headline: "Read full articles with the Read button",
+            summary: "See the 'Read' button at the bottom? Tap it to open the full article in a browser. Now try double-tapping to save, then head to the Saved tab!",
             category: .entertainment,
             source: "Flashbit Tutorial",
-            publishedAt: Date()
+            publishedAt: Date(),
+            articleURL: URL(string: "https://example.com")
         )
     ]
 
