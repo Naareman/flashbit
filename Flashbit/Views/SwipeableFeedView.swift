@@ -11,6 +11,7 @@ struct SwipeableFeedView: View {
 
     // Bits to display for this session (captured at load time)
     @State private var sessionBits: [Bit] = []
+    @State private var hasLoadedSession: Bool = false
 
     // Track which bits user viewed this session (marked as seen when session ends)
     @State private var sessionViewedIndices: Set<Int> = []
@@ -46,7 +47,8 @@ struct SwipeableFeedView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                if sessionBits.isEmpty && viewModel.isLoading {
+                if !hasLoadedSession {
+                    // Show loading until session bits are loaded
                     loadingView
                 } else if sessionBits.isEmpty || isOnCaughtUpCard {
                     // "You're all caught up" as its own story card
@@ -105,6 +107,8 @@ struct SwipeableFeedView: View {
             if !sessionBits.isEmpty {
                 sessionViewedIndices.insert(0)
             }
+            // Mark session as loaded (prevents showing "caught up" before load completes)
+            hasLoadedSession = true
         }
         .onAppear {
             lightImpact.prepare()
