@@ -442,25 +442,6 @@ struct SwipeableFeedView: View {
                     .font(.body)
                     .foregroundColor(.white.opacity(0.8))
 
-                // Go Back button (only show if there are previous bits to go back to)
-                if currentIndex > 0 {
-                    Button(action: {
-                        goToPrevious()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                            Text("Go Back")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                        .background(Color.white.opacity(0.2))
-                        .cornerRadius(25)
-                    }
-                    .padding(.top, 16)
-                }
-
                 Spacer()
                 Spacer()
             }
