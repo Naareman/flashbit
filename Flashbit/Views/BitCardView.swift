@@ -31,11 +31,29 @@ struct BitCardView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Spacer(minLength: 20) // Allows content to expand upward
 
-                    // Headline
-                    Text(bit.headline)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+                    // Headline - tappable to open article
+                    if bit.articleURL != nil {
+                        Button(action: {
+                            showingSafari = true
+                        }) {
+                            HStack(alignment: .top, spacing: 6) {
+                                Text(bit.headline)
+                                    .font(.system(size: 28, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.leading)
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .padding(.top, 6)
+                            }
+                        }
                         .shadow(radius: 2)
+                    } else {
+                        Text(bit.headline)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.white)
+                            .shadow(radius: 2)
+                    }
 
                     // Summary - conditionally shown based on available space
                     if summaryConfig.showSummary {
@@ -46,7 +64,7 @@ struct BitCardView: View {
                             .shadow(radius: 1)
                     }
 
-                    // Source, time, and read button
+                    // Source and time
                     HStack {
                         Text(bit.source)
                             .font(.caption)
@@ -55,25 +73,6 @@ struct BitCardView: View {
                             .lineLimit(1)
 
                         Spacer(minLength: 8)
-
-                        // Read full article button
-                        if bit.articleURL != nil {
-                            Button(action: {
-                                showingSafari = true
-                            }) {
-                                HStack(spacing: 4) {
-                                    Text("Read")
-                                    Image(systemName: "arrow.up.right")
-                                }
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(Color.white.opacity(0.2))
-                                .cornerRadius(12)
-                            }
-                        }
 
                         Text(bit.publishedAt.timeAgoDisplay())
                             .font(.caption)

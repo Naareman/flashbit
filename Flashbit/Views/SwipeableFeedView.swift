@@ -41,26 +41,26 @@ struct SwipeableFeedView: View {
     // Static articles for onboarding (independent from real news)
     private static let onboardingArticles: [Bit] = [
         Bit(
-            headline: "Welcome to Flashbit! This is how news will appear",
-            summary: "Each card shows you a bite-sized news update. You'll see the headline, a brief summary, and the source. Try tapping the right side to go to the next article!",
+            headline: "Welcome to Flashbit",
+            summary: "One bit = One story",
             category: .tech,
-            source: "Flashbit Tutorial",
+            source: "Flashbit",
             publishedAt: Date(),
             articleURL: URL(string: "https://example.com")
         ),
         Bit(
-            headline: "You can navigate back and forth easily",
-            summary: "Tap the left side to go back to previous articles. Tap the right side to move forward. Double-tap anywhere to save an article for later!",
+            headline: "Tap the title to read full article",
+            summary: "Double-tap anywhere to save",
             category: .world,
-            source: "Flashbit Tutorial",
+            source: "Flashbit",
             publishedAt: Date(),
             articleURL: URL(string: "https://example.com")
         ),
         Bit(
-            headline: "Read full articles with the Read button",
-            summary: "See the 'Read' button at the bottom? Tap it to open the full article in a browser. Now try double-tapping to save, then head to the Saved tab!",
+            headline: "Now save this bit and check your Saved tab",
+            summary: "",
             category: .entertainment,
-            source: "Flashbit Tutorial",
+            source: "Flashbit",
             publishedAt: Date(),
             articleURL: URL(string: "https://example.com")
         )
@@ -117,24 +117,32 @@ struct SwipeableFeedView: View {
                 }
 
                 // Tap zones - handles both single and double taps (only on article cards)
+                // Excludes bottom 280pt to allow headline tap to open article
                 if !displayBits.isEmpty && !isOnCaughtUpCard {
-                    HStack(spacing: 0) {
-                        // Left tap zone - previous
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture(count: 2) { saveBit() }
-                            .onTapGesture { handleLeftTap() }
+                    VStack(spacing: 0) {
+                        HStack(spacing: 0) {
+                            // Left tap zone - previous
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture(count: 2) { saveBit() }
+                                .onTapGesture { handleLeftTap() }
 
-                        // Right tap zone - next
+                            // Right tap zone - next
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture(count: 2) { saveBit() }
+                                .onTapGesture { handleRightTap() }
+                        }
+
+                        // Bottom area excluded from tap zones (allows headline to be tapped)
                         Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture(count: 2) { saveBit() }
-                            .onTapGesture { handleRightTap() }
+                            .frame(height: 280)
+                            .allowsHitTesting(false)
                     }
                 }
 
-                // Progress bar and remaining counter - only show when we have bits
-                if !displayBits.isEmpty {
+                // Progress bar and remaining counter - only show when viewing bits (not on caught up card)
+                if !displayBits.isEmpty && !isOnCaughtUpCard {
                     VStack {
                         HStack {
                             progressBar
@@ -291,12 +299,12 @@ struct SwipeableFeedView: View {
             // Already saved - remove it
             storage.removeBit(bit)
             mediumImpact.impactOccurred()
-            showToast(message: "Unsaved", icon: "bookmark.slash")
+            showToast(message: "Unsaved bit", icon: "bookmark.slash")
         } else {
             // Save the bit
             storage.saveBit(bit)
             heavyImpact.impactOccurred()
-            showToast(message: "Saved!", icon: "bookmark.fill")
+            showToast(message: "Saved bit", icon: "bookmark.fill")
 
             // Progress onboarding if on step 2 - quickly point to Saved tab
             if !storage.hasCompletedOnboarding && onboardingStep == 2 {
@@ -350,26 +358,18 @@ struct SwipeableFeedView: View {
                 Spacer()
 
                 // App icon
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
-                        .frame(width: 100, height: 100)
-
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(.white)
-                }
+                Image("AppIcon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 100, height: 100)
+                    .clipShape(RoundedRectangle(cornerRadius: 22))
 
                 VStack(spacing: 12) {
                     Text("Welcome to Flashbit")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
 
-                    Text("Get the news in seconds, not minutes")
+                    Text("One bit = One story")
                         .font(.body)
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
@@ -437,13 +437,9 @@ struct SwipeableFeedView: View {
                         .foregroundColor(.white)
                 }
 
-                Text("You're all caught up!")
+                Text("That's everything for now")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
-
-                Text("Now you are up to date")
-                    .font(.body)
-                    .foregroundColor(.white.opacity(0.8))
 
                 Spacer()
                 Spacer()
@@ -510,18 +506,18 @@ struct SwipeableFeedView: View {
             // Positioned instruction based on step
             switch onboardingStep {
             case 0:
-                // Right side - "Tap here for next"
+                // Right side - "Next bit"
                 HStack {
                     Spacer()
-                    onboardingPrompt(text: "Tap here", subtext: "for next bit")
+                    onboardingPrompt(text: "Next bit")
                         .padding(.trailing, 40)
                 }
                 .allowsHitTesting(false)
 
             case 1:
-                // Left side - "Tap here to go back"
+                // Left side - "Previous bit"
                 HStack {
-                    onboardingPrompt(text: "Tap here", subtext: "to go back")
+                    onboardingPrompt(text: "Previous bit")
                         .padding(.leading, 20)
                     Spacer()
                 }
@@ -529,7 +525,7 @@ struct SwipeableFeedView: View {
 
             case 2:
                 // Center - "Double-tap to save"
-                onboardingPrompt(text: "Double-tap", subtext: "anywhere to save")
+                onboardingPrompt(text: "Double-tap to save")
                     .allowsHitTesting(false)
 
             case 3:
@@ -560,7 +556,7 @@ struct SwipeableFeedView: View {
         }
     }
 
-    private func onboardingPrompt(text: String, subtext: String) -> some View {
+    private func onboardingPrompt(text: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "hand.tap.fill")
                 .font(.system(size: 36))
@@ -572,10 +568,6 @@ struct SwipeableFeedView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.white)
                 .scaleEffect(pulseAnimation ? 1.05 : 0.95)
-
-            Text(subtext)
-                .font(.subheadline)
-                .foregroundColor(.white.opacity(0.8))
         }
         .opacity(pulseAnimation ? 1.0 : 0.6)
     }

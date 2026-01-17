@@ -259,11 +259,8 @@ class StorageService: ObservableObject {
         maxCachedArticles = clamped
         UserDefaults.standard.set(clamped, forKey: maxArticlesKey)
 
-        // If current cache exceeds new limit, trim it
-        if cachedBits.count > clamped {
-            cachedBits = Array(cachedBits.prefix(clamped))
-            persistCachedBits()
-        }
+        // NOTE: We don't trim the cache immediately to avoid disrupting the current session.
+        // The new limit will take effect on the next fetch/refresh.
     }
 
     // MARK: - Seen Tracking

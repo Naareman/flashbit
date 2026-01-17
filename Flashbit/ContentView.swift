@@ -356,7 +356,7 @@ struct FilterChip: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(isSelected ? Color.blue : Color.white.opacity(0.1))
-                .cornerRadius(16)
+                .cornerRadius(6)
         }
     }
 }
@@ -455,7 +455,7 @@ struct SettingsView: View {
                             storage.setMaxArticles(Int(newValue))
                         }
 
-                        Text("Keep up to \(Int(maxArticlesValue)) bits cached from last time you read. Older bits will be removed when the limit is reached.")
+                        Text("Keep up to \(Int(maxArticlesValue)) bits cached. Changes take effect on next refresh.")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
@@ -474,7 +474,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button("Show me how to navigate") {
+                    Button("Show me how it works") {
                         storage.resetOnboarding()
                     }
                     .foregroundColor(.blue)
