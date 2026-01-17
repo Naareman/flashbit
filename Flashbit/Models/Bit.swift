@@ -41,6 +41,11 @@ struct Bit: Identifiable, Codable {
         }
         return summary.smartTruncate(maxLength: 160)
     }
+
+    /// Returns headline, truncated smartly if too long for 3 lines (~90 chars)
+    var smartHeadline: String {
+        headline.smartTruncate(maxLength: 90)
+    }
 }
 
 // MARK: - Smart Text Truncation

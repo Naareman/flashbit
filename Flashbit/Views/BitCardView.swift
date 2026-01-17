@@ -19,7 +19,7 @@ struct BitCardView: View {
                     Spacer()
 
                     // Headline
-                    Text(bit.headline)
+                    Text(bit.smartHeadline)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(3)

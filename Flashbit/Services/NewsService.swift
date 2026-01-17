@@ -68,9 +68,6 @@ actor NewsService {
             }
         }
 
-        // Generate AI summaries for new articles
-        let summarizedBits = await generateAISummaries(for: newBits)
-
         // Mark first fetch complete if this was the first time
         if isFirstFetch {
             await MainActor.run {
@@ -78,9 +75,9 @@ actor NewsService {
             }
         }
 
-        // Update cache with summarized bits (handles deduplication and 500 limit)
+        // Update cache with new bits
         await MainActor.run {
-            storage.updateCachedBits(with: summarizedBits)
+            storage.updateCachedBits(with: newBits)
         }
 
         // Return all cached bits (sorted by date)

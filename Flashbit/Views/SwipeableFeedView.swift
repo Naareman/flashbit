@@ -69,13 +69,15 @@ struct SwipeableFeedView: View {
                     }
                 }
 
-                // Progress bar (Instagram Stories style)
-                VStack {
-                    progressBar
-                    Spacer()
+                // Progress bar (Instagram Stories style) - only show when we have bits
+                if !viewModel.bits.isEmpty {
+                    VStack {
+                        progressBar
+                        Spacer()
+                    }
+                    .padding(.top, 50)
+                    .padding(.horizontal, 8)
                 }
-                .padding(.top, 50)
-                .padding(.horizontal, 8)
 
                 // Toast message
                 if let message = toastMessage {
@@ -407,17 +409,6 @@ struct SwipeableFeedView: View {
                 EmptyView()
             }
 
-            // Skip button at bottom (only for first 3 steps)
-            if onboardingStep < 3 {
-                VStack {
-                    Spacer()
-                    Button("Skip") {
-                        storage.completeOnboarding()
-                    }
-                    .foregroundColor(.white.opacity(0.7))
-                    .padding(.bottom, 120)
-                }
-            }
         }
     }
 

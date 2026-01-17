@@ -8,7 +8,7 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             SwipeableFeedView(selectedTab: $selectedTab)
                 .tabItem {
-                    Label("Feed", systemImage: "bolt.fill")
+                    Label("Bits", systemImage: "bolt.fill")
                 }
                 .tag(Tab.feed)
 
@@ -200,7 +200,7 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "slider.horizontal.3")
                                 .foregroundColor(.blue)
-                            Text("Manage Categories")
+                            Text("Categories you want to see")
                         }
                     }
                 }
@@ -210,7 +210,7 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: "doc.on.doc")
                                 .foregroundColor(.orange)
-                            Text("Max Cached Articles")
+                            Text("Max cached bits")
                             Spacer()
                             Text("\(Int(maxArticlesValue))")
                                 .foregroundColor(.gray)
@@ -227,7 +227,7 @@ struct SettingsView: View {
                             storage.setMaxArticles(Int(newValue))
                         }
 
-                        Text("Keep up to \(Int(maxArticlesValue)) articles cached for offline reading. Older articles will be removed when the limit is reached.")
+                        Text("Keep up to \(Int(maxArticlesValue)) bits cached from last time you read. Older bits will be removed when the limit is reached.")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
@@ -246,7 +246,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button("Show Onboarding Again") {
+                    Button("Show me how to navigate") {
                         storage.resetOnboarding()
                     }
                     .foregroundColor(.blue)
@@ -268,7 +268,7 @@ struct ManageCategoriesView: View {
     var body: some View {
         List {
             Section {
-                Text("Select the categories you want to see in your feed")
+                Text("Select the categories you want to see in your bits")
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
@@ -279,7 +279,7 @@ struct ManageCategoriesView: View {
                 }
             }
         }
-        .navigationTitle("Manage Categories")
+        .navigationTitle("Categories")
     }
 }
 
