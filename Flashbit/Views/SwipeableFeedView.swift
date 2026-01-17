@@ -9,6 +9,9 @@ struct SwipeableFeedView: View {
     @State private var toastMessage: String? = nil
     @State private var toastIcon: String = "bookmark.fill"
 
+    // Bits to display for this session (captured at load time)
+    @State private var sessionBits: [Bit] = []
+
     // Onboarding state (4 steps: 0-3)
     // 0: Tap right for next
     // 1: Tap left to go back
@@ -28,11 +31,11 @@ struct SwipeableFeedView: View {
 
     // Total items including the "caught up" card at the end
     private var totalItems: Int {
-        viewModel.bits.count + 1
+        sessionBits.count + 1
     }
 
     private var isOnCaughtUpCard: Bool {
-        currentIndex == viewModel.bits.count
+        currentIndex >= sessionBits.count
     }
 
     var body: some View {
@@ -40,20 +43,20 @@ struct SwipeableFeedView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                if viewModel.bits.isEmpty {
+                if sessionBits.isEmpty && viewModel.isLoading {
                     loadingView
-                } else if isOnCaughtUpCard {
+                } else if sessionBits.isEmpty || isOnCaughtUpCard {
                     // "You're all caught up" as its own story card
                     caughtUpCard
                 } else {
                     // Current news card
-                    BitCardView(bit: viewModel.bits[currentIndex])
+                    BitCardView(bit: sessionBits[currentIndex])
                         .id(currentIndex)
                         .transition(.opacity)
                 }
 
                 // Tap zones - handles both single and double taps (only on article cards)
-                if !viewModel.bits.isEmpty && !isOnCaughtUpCard {
+                if !sessionBits.isEmpty && !isOnCaughtUpCard {
                     HStack(spacing: 0) {
                         // Left tap zone - previous
                         Color.clear
@@ -70,7 +73,7 @@ struct SwipeableFeedView: View {
                 }
 
                 // Progress bar (Instagram Stories style) - only show when we have bits
-                if !viewModel.bits.isEmpty {
+                if !sessionBits.isEmpty {
                     VStack {
                         progressBar
                             .padding(.horizontal, 8)
@@ -86,13 +89,19 @@ struct SwipeableFeedView: View {
                 }
 
                 // Interactive onboarding overlay
-                if isOnboarding && !viewModel.bits.isEmpty {
+                if isOnboarding && !sessionBits.isEmpty {
                     onboardingOverlay(geometry: geometry)
                 }
             }
         }
         .task {
             await viewModel.loadBits()
+            // Capture unseen bits for this session (won't change as user marks them seen)
+            sessionBits = viewModel.unseenBits
+            // Mark the first bit as seen
+            if !sessionBits.isEmpty {
+                viewModel.markAsSeen(sessionBits[0])
+            }
         }
         .onAppear {
             lightImpact.prepare()
@@ -161,6 +170,8 @@ struct SwipeableFeedView: View {
                 currentIndex += 1
             }
             lightImpact.impactOccurred()
+            // Mark the new bit as seen
+            markCurrentBitAsSeen()
         } else {
             // At the very end (past caught up card)
             mediumImpact.impactOccurred()
@@ -180,8 +191,8 @@ struct SwipeableFeedView: View {
     }
 
     private func saveBit() {
-        guard !isOnCaughtUpCard else { return }
-        let bit = viewModel.bits[currentIndex]
+        guard !isOnCaughtUpCard, currentIndex < sessionBits.count else { return }
+        let bit = sessionBits[currentIndex]
 
         // Check if already saved
         if storage.isSaved(bit) {
@@ -204,6 +215,11 @@ struct SwipeableFeedView: View {
                 }
             }
         }
+    }
+
+    private func markCurrentBitAsSeen() {
+        guard currentIndex < sessionBits.count else { return }
+        viewModel.markAsSeen(sessionBits[currentIndex])
     }
 
     private func showToast(message: String, icon: String) {
@@ -261,8 +277,8 @@ struct SwipeableFeedView: View {
                     .font(.body)
                     .foregroundColor(.white.opacity(0.8))
 
-                HStack(spacing: 16) {
-                    // Go Back button
+                // Go Back button (only show if there are previous bits to go back to)
+                if currentIndex > 0 {
                     Button(action: {
                         goToPrevious()
                     }) {
@@ -277,26 +293,8 @@ struct SwipeableFeedView: View {
                         .background(Color.white.opacity(0.2))
                         .cornerRadius(25)
                     }
-
-                    // Start Over button
-                    Button(action: {
-                        withAnimation {
-                            currentIndex = 0
-                        }
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.counterclockwise")
-                            Text("Start Over")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.purple)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                        .background(Color.white)
-                        .cornerRadius(25)
-                    }
+                    .padding(.top, 16)
                 }
-                .padding(.top, 16)
 
                 Spacer()
                 Spacer()

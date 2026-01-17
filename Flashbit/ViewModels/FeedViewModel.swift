@@ -9,6 +9,17 @@ class FeedViewModel: ObservableObject {
     private let newsService = NewsService()
     private let storage = StorageService.shared
 
+    /// Returns only the bits the user hasn't seen yet
+    var unseenBits: [Bit] {
+        bits.filter { !storage.isSeen($0) }
+    }
+
+    /// Mark a bit as seen
+    func markAsSeen(_ bit: Bit) {
+        storage.markAsSeen(bit)
+        objectWillChange.send() // Trigger UI update
+    }
+
     func loadBits() async {
         // Show cached data immediately if available
         if !storage.cachedBits.isEmpty {

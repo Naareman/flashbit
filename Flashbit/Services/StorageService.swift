@@ -23,6 +23,10 @@ class StorageService: ObservableObject {
     private let lastFetchTimesKey = "lastFetchTimes"
     private let hasEverFetchedKey = "hasEverFetched"
     private let maxArticlesKey = "maxCachedArticles"
+    private let seenBitIdsKey = "seenBitIds"
+
+    // Track which articles the user has already seen
+    private var seenBitIds: Set<String> = [] // Using articleURL string as identifier
 
     static let maxArticlesLimit = 500
     static let minArticlesLimit = 20
@@ -36,6 +40,7 @@ class StorageService: ObservableObject {
         loadSelectedCategories()
         loadOnboardingStatus()
         loadMaxArticlesSetting()
+        loadSeenBitIds()
     }
 
     private func loadOnboardingStatus() {
@@ -259,5 +264,52 @@ class StorageService: ObservableObject {
             cachedBits = Array(cachedBits.prefix(clamped))
             persistCachedBits()
         }
+    }
+
+    // MARK: - Seen Tracking
+
+    /// Returns only the bits that the user hasn't seen yet
+    func getUnseenBits() -> [Bit] {
+        cachedBits.filter { !isSeen($0) }
+    }
+
+    /// Mark a bit as seen by the user
+    func markAsSeen(_ bit: Bit) {
+        let identifier = bitIdentifier(for: bit)
+        guard !seenBitIds.contains(identifier) else { return }
+        seenBitIds.insert(identifier)
+        persistSeenBitIds()
+    }
+
+    /// Check if user has already seen this bit
+    func isSeen(_ bit: Bit) -> Bool {
+        seenBitIds.contains(bitIdentifier(for: bit))
+    }
+
+    /// Clear all seen tracking (for testing/reset)
+    func clearSeenBits() {
+        seenBitIds.removeAll()
+        persistSeenBitIds()
+    }
+
+    private func bitIdentifier(for bit: Bit) -> String {
+        // Use articleURL as primary identifier, fallback to headline+source
+        if let url = bit.articleURL?.absoluteString {
+            return url
+        }
+        return "\(bit.headline)|\(bit.source)"
+    }
+
+    private func loadSeenBitIds() {
+        guard let data = UserDefaults.standard.data(forKey: seenBitIdsKey),
+              let ids = try? JSONDecoder().decode(Set<String>.self, from: data) else {
+            return
+        }
+        seenBitIds = ids
+    }
+
+    private func persistSeenBitIds() {
+        guard let data = try? JSONEncoder().encode(seenBitIds) else { return }
+        UserDefaults.standard.set(data, forKey: seenBitIdsKey)
     }
 }
