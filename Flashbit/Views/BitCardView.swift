@@ -1,8 +1,10 @@
 import SwiftUI
 import UIKit
+import SafariServices
 
 struct BitCardView: View {
     let bit: Bit
+    @State private var showingSafari = false
 
     // Layout constants
     private let headlineFont = UIFont.systemFont(ofSize: 28, weight: .bold)
@@ -29,11 +31,16 @@ struct BitCardView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Spacer(minLength: 20) // Allows content to expand upward
 
-                    // Headline - show full text, no truncation
+                    // Headline - tappable to open article
                     Text(bit.headline)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .shadow(radius: 2)
+                        .onTapGesture {
+                            if bit.articleURL != nil {
+                                showingSafari = true
+                            }
+                        }
 
                     // Summary - conditionally shown based on available space
                     if summaryConfig.showSummary {
@@ -44,7 +51,7 @@ struct BitCardView: View {
                             .shadow(radius: 1)
                     }
 
-                    // Source and time
+                    // Source and time + read more indicator
                     HStack {
                         Text(bit.source)
                             .font(.caption)
@@ -53,6 +60,12 @@ struct BitCardView: View {
                             .lineLimit(1)
 
                         Spacer(minLength: 8)
+
+                        if bit.articleURL != nil {
+                            Text("Tap title to read more")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.5))
+                        }
 
                         Text(bit.publishedAt.timeAgoDisplay())
                             .font(.caption)
@@ -74,6 +87,12 @@ struct BitCardView: View {
             .clipShape(RoundedRectangle(cornerRadius: 0))
         }
         .ignoresSafeArea()
+        .fullScreenCover(isPresented: $showingSafari) {
+            if let url = bit.articleURL {
+                SafariView(url: url)
+                    .ignoresSafeArea()
+            }
+        }
     }
 
     // MARK: - Summary Configuration
@@ -198,6 +217,22 @@ struct BitCardView: View {
         case .world: return [.indigo, .blue]
         }
     }
+}
+
+// MARK: - Safari View Wrapper
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let config = SFSafariViewController.Configuration()
+        config.entersReaderIfAvailable = false
+        let safari = SFSafariViewController(url: url, configuration: config)
+        safari.preferredControlTintColor = .systemBlue
+        return safari
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
 
 struct CategoryBadge: View {

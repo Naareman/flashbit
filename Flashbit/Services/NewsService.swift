@@ -84,6 +84,46 @@ actor NewsService {
         return await MainActor.run { storage.cachedBits }
     }
 
+    /// Fetches RSS feeds one by one, calling onBatchReady after each feed completes
+    /// This allows showing articles progressively as they load
+    func fetchBitsProgressively(onBatchReady: @escaping @MainActor ([Bit]) -> Void) async {
+        let storage = await MainActor.run { StorageService.shared }
+        let isFirstFetch = await MainActor.run { storage.isFirstFetch }
+
+        // Fetch feeds concurrently but process results as they arrive
+        await withTaskGroup(of: Result<[Bit], Error>.self) { group in
+            for feed in Self.feeds {
+                group.addTask {
+                    await self.fetchRSSFeed(feed: feed, isFirstFetch: isFirstFetch)
+                }
+            }
+
+            var successCount = 0
+            for await result in group {
+                switch result {
+                case .success(let bits):
+                    if !bits.isEmpty {
+                        // Update cache and notify immediately
+                        await MainActor.run {
+                            storage.updateCachedBits(with: bits)
+                            onBatchReady(storage.cachedBits)
+                        }
+                        successCount += 1
+                    }
+                case .failure:
+                    continue
+                }
+            }
+
+            // Mark first fetch complete
+            if isFirstFetch && successCount > 0 {
+                await MainActor.run {
+                    storage.markFirstFetchComplete()
+                }
+            }
+        }
+    }
+
     /// Fetches a single RSS feed and converts to Bits
     private func fetchRSSFeed(feed: FeedConfig, isFirstFetch: Bool) async -> Result<[Bit], Error> {
         guard let url = URL(string: feed.url) else {

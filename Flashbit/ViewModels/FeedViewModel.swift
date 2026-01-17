@@ -32,15 +32,16 @@ class FeedViewModel: ObservableObject {
         }
         error = nil
 
-        do {
-            let allBits = try await newsService.fetchBits()
-            bits = filterBySelectedCategories(allBits)
-        } catch {
-            self.error = error
-            // If we still have no bits, fall back to mock data
-            if bits.isEmpty {
-                bits = filterBySelectedCategories(Self.mockBits)
-            }
+        // Fetch progressively - updates come as each feed completes
+        await newsService.fetchBitsProgressively { [weak self] updatedBits in
+            guard let self = self else { return }
+            self.bits = self.filterBySelectedCategories(updatedBits)
+            self.isLoading = false
+        }
+
+        // If still no bits after all feeds, fall back to mock data
+        if bits.isEmpty {
+            bits = filterBySelectedCategories(Self.mockBits)
         }
 
         isLoading = false
