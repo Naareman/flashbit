@@ -17,7 +17,6 @@
 		A10008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20008; };
 		A10010 /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20010; };
 		A10011 /* RSSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20011; };
-		A10012 /* SummarizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20012; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,7 +30,6 @@
 		A20008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20010 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
 		A20011 /* RSSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParser.swift; sourceTree = "<group>"; };
-		A20012 /* SummarizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationService.swift; sourceTree = "<group>"; };
 		A30000 /* Flashbit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flashbit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -107,7 +105,6 @@
 				A20005 /* NewsService.swift */,
 				A20011 /* RSSParser.swift */,
 				A20010 /* StorageService.swift */,
-				A20012 /* SummarizationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -190,7 +187,6 @@
 				A10007 /* SwipeableFeedView.swift in Sources */,
 				A10010 /* StorageService.swift in Sources */,
 				A10011 /* RSSParser.swift in Sources */,
-				A10012 /* SummarizationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

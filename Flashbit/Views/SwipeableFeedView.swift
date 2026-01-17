@@ -75,13 +75,6 @@ struct SwipeableFeedView: View {
                         progressBar
                             .padding(.horizontal, 8)
                             .padding(.vertical, 8)
-                            .background(
-                                LinearGradient(
-                                    colors: [.black.opacity(0.5), .black.opacity(0.3), .clear],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
                         Spacer()
                     }
                     .padding(.top, 44)
@@ -440,12 +433,30 @@ struct SwipeableFeedView: View {
         .opacity(pulseAnimation ? 1.0 : 0.6)
     }
 
-    // Instagram Stories style progress bar
+    // Max number of progress segments to display
+    private let maxProgressSegments = 20
+
+    // How many articles each progress segment represents
+    private var articlesPerSegment: Int {
+        max(1, Int(ceil(Double(totalItems) / Double(maxProgressSegments))))
+    }
+
+    // Total number of progress segments to show
+    private var progressSegmentCount: Int {
+        min(totalItems, maxProgressSegments)
+    }
+
+    // Which progress segment is currently active
+    private var currentProgressSegment: Int {
+        currentIndex / articlesPerSegment
+    }
+
+    // Instagram Stories style progress bar (grouped into max 20 segments)
     private var progressBar: some View {
         HStack(spacing: 4) {
-            ForEach(0..<totalItems, id: \.self) { index in
+            ForEach(0..<progressSegmentCount, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(index <= currentIndex ? Color.white : Color.white.opacity(0.3))
+                    .fill(index <= currentProgressSegment ? Color.white : Color.white.opacity(0.3))
                     .frame(height: 3)
             }
         }

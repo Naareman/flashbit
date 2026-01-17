@@ -157,48 +157,4 @@ actor NewsService {
         }
     }
 
-    /// Generates AI summaries for articles that need them
-    private func generateAISummaries(for bits: [Bit]) async -> [Bit] {
-        // Process in batches to avoid overwhelming the system
-        let batchSize = 10
-        var summarizedBits: [Bit] = []
-
-        for batchStart in stride(from: 0, to: bits.count, by: batchSize) {
-            let batchEnd = min(batchStart + batchSize, bits.count)
-            let batch = Array(bits[batchStart..<batchEnd])
-
-            // Process batch concurrently
-            let processedBatch = await withTaskGroup(of: Bit.self) { group in
-                for bit in batch {
-                    group.addTask {
-                        // Skip if summary is already short enough
-                        if bit.summary.count <= 160 {
-                            return bit
-                        }
-
-                        // Generate AI summary
-                        let aiSummary = await SummarizationService.shared.summarize(
-                            bit.summary,
-                            maxLength: 140
-                        )
-
-                        // Create new bit with AI summary
-                        var newBit = bit
-                        newBit.aiSummary = aiSummary
-                        return newBit
-                    }
-                }
-
-                var results: [Bit] = []
-                for await bit in group {
-                    results.append(bit)
-                }
-                return results
-            }
-
-            summarizedBits.append(contentsOf: processedBatch)
-        }
-
-        return summarizedBits
-    }
 }
