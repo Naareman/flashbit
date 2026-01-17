@@ -8,40 +8,39 @@ struct BitCardView: View {
     private let headlineFont = UIFont.systemFont(ofSize: 28, weight: .bold)
     private let summaryFont = UIFont.preferredFont(forTextStyle: .body)
     private let horizontalPadding: CGFloat = 48 // 24 on each side
-    private let maxTotalLines = 7 // Max lines for headline + summary combined
-    private let maxHeadlineLines = 4
+    private let maxSummaryLines = 5
 
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width - horizontalPadding
-            let textConfig = calculateTextConfig(availableWidth: availableWidth)
+            let summaryConfig = calculateSummaryConfig(availableWidth: availableWidth)
 
-            ZStack(alignment: .bottom) {
+            ZStack(alignment: .topLeading) {
                 // Background image or gradient
                 backgroundView
                     .frame(width: geometry.size.width, height: geometry.size.height)
 
-                // Content overlay
+                // Category badge - positioned below progress bar
+                CategoryBadge(category: bit.category)
+                    .padding(.top, 70) // Below the progress bar area
+                    .padding(.leading, 24)
+
+                // Content overlay - anchored to bottom
                 VStack(alignment: .leading, spacing: 16) {
-                    // Category badge
-                    CategoryBadge(category: bit.category)
-                        .padding(.top, 60)
+                    Spacer(minLength: 20) // Allows content to expand upward
 
-                    Spacer()
-
-                    // Headline - always show full text
+                    // Headline - show full text, no truncation
                     Text(bit.headline)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
-                        .lineLimit(maxHeadlineLines)
                         .shadow(radius: 2)
 
                     // Summary - conditionally shown based on available space
-                    if textConfig.showSummary {
-                        Text(textConfig.summaryText)
+                    if summaryConfig.showSummary {
+                        Text(summaryConfig.summaryText)
                             .font(.body)
                             .foregroundColor(.white.opacity(0.9))
-                            .lineLimit(textConfig.summaryLines)
+                            .lineLimit(summaryConfig.summaryLines)
                             .shadow(radius: 1)
                     }
 
@@ -62,8 +61,8 @@ struct BitCardView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, textConfig.bottomPadding)
+                .padding(.top, 100) // Start below category badge area
+                .padding(.bottom, 100) // Fixed padding above tab bar
                 .background(
                     LinearGradient(
                         colors: [.clear, .clear, .black.opacity(0.7), .black.opacity(0.9)],
@@ -77,51 +76,34 @@ struct BitCardView: View {
         .ignoresSafeArea()
     }
 
-    // MARK: - Text Configuration
+    // MARK: - Summary Configuration
 
-    private struct TextConfig {
+    private struct SummaryConfig {
         let showSummary: Bool
         let summaryText: String
         let summaryLines: Int
-        let bottomPadding: CGFloat
     }
 
-    private func calculateTextConfig(availableWidth: CGFloat) -> TextConfig {
-        let headlineLines = estimateLineCount(text: bit.headline, font: headlineFont, width: availableWidth)
-
-        // If headline takes all available lines, no summary
-        if headlineLines >= maxHeadlineLines {
-            return TextConfig(showSummary: false, summaryText: "", summaryLines: 0, bottomPadding: 100)
-        }
-
-        let availableSummaryLines = maxTotalLines - min(headlineLines, maxHeadlineLines)
-
-        // No room for summary
-        if availableSummaryLines <= 0 {
-            return TextConfig(showSummary: false, summaryText: "", summaryLines: 0, bottomPadding: 100)
+    private func calculateSummaryConfig(availableWidth: CGFloat) -> SummaryConfig {
+        // Check if summary is empty
+        guard !bit.summary.isEmpty else {
+            return SummaryConfig(showSummary: false, summaryText: "", summaryLines: 0)
         }
 
         let summaryLines = estimateLineCount(text: bit.summary, font: summaryFont, width: availableWidth)
 
-        // Summary fits completely
-        if summaryLines <= availableSummaryLines {
-            return TextConfig(showSummary: true, summaryText: bit.summary, summaryLines: availableSummaryLines, bottomPadding: 100)
+        // Summary fits completely within max lines
+        if summaryLines <= maxSummaryLines {
+            return SummaryConfig(showSummary: true, summaryText: bit.summary, summaryLines: maxSummaryLines)
         }
 
-        // Summary needs more space - try expanding the area first (preferred approach)
-        let expandedSummaryLines = availableSummaryLines + 2 // Give 2 extra lines by reducing padding
-        if summaryLines <= expandedSummaryLines {
-            // Fits with expanded area - reduce bottom padding
-            return TextConfig(showSummary: true, summaryText: bit.summary, summaryLines: expandedSummaryLines, bottomPadding: 60)
-        }
-
-        // Still doesn't fit - try truncating at sentence boundary
-        if let truncated = truncateAtSentenceBoundary(bit.summary, maxLines: expandedSummaryLines, font: summaryFont, width: availableWidth) {
-            return TextConfig(showSummary: true, summaryText: truncated, summaryLines: expandedSummaryLines, bottomPadding: 60)
+        // Summary is too long - try truncating at sentence boundary
+        if let truncated = truncateAtSentenceBoundary(bit.summary, maxLines: maxSummaryLines, font: summaryFont, width: availableWidth) {
+            return SummaryConfig(showSummary: true, summaryText: truncated, summaryLines: maxSummaryLines)
         }
 
         // No good sentence boundary - hide summary entirely
-        return TextConfig(showSummary: false, summaryText: "", summaryLines: 0, bottomPadding: 100)
+        return SummaryConfig(showSummary: false, summaryText: "", summaryLines: 0)
     }
 
     private func estimateLineCount(text: String, font: UIFont, width: CGFloat) -> Int {
