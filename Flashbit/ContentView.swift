@@ -155,7 +155,7 @@ struct SavedBitCard: View {
                 .lineLimit(2)
 
             // Summary
-            Text(bit.summary)
+            Text(bit.smartSummary)
                 .font(.subheadline)
                 .foregroundColor(.white.opacity(0.7))
                 .lineLimit(2)

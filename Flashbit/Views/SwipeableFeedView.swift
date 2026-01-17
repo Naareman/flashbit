@@ -52,20 +52,20 @@ struct SwipeableFeedView: View {
                         .transition(.opacity)
                 }
 
-                // Tap zones - handles both single and double taps
-                if !viewModel.bits.isEmpty {
+                // Tap zones - handles both single and double taps (only on article cards)
+                if !viewModel.bits.isEmpty && !isOnCaughtUpCard {
                     HStack(spacing: 0) {
-                        // Left tap zone - previous (always enabled to go back)
+                        // Left tap zone - previous
                         Color.clear
                             .contentShape(Rectangle())
-                            .onTapGesture(count: 2) { if !isOnCaughtUpCard { saveBit() } }
+                            .onTapGesture(count: 2) { saveBit() }
                             .onTapGesture { handleLeftTap() }
 
-                        // Right tap zone - next (disabled on caught up card)
+                        // Right tap zone - next
                         Color.clear
                             .contentShape(Rectangle())
-                            .onTapGesture(count: 2) { if !isOnCaughtUpCard { saveBit() } }
-                            .onTapGesture { if !isOnCaughtUpCard { handleRightTap() } }
+                            .onTapGesture(count: 2) { saveBit() }
+                            .onTapGesture { handleRightTap() }
                     }
                 }
 
@@ -258,19 +258,40 @@ struct SwipeableFeedView: View {
                     .font(.body)
                     .foregroundColor(.white.opacity(0.8))
 
-                Button(action: {
-                    Task { await refreshFeed() }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.clockwise")
-                        Text("Start Over")
+                HStack(spacing: 16) {
+                    // Go Back button
+                    Button(action: {
+                        goToPrevious()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.left")
+                            Text("Go Back")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(25)
                     }
-                    .font(.headline)
-                    .foregroundColor(.purple)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 14)
-                    .background(Color.white)
-                    .cornerRadius(25)
+
+                    // Start Over button
+                    Button(action: {
+                        withAnimation {
+                            currentIndex = 0
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("Start Over")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.purple)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                        .background(Color.white)
+                        .cornerRadius(25)
+                    }
                 }
                 .padding(.top, 16)
 

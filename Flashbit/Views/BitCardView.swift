@@ -25,8 +25,8 @@ struct BitCardView: View {
                         .lineLimit(3)
                         .shadow(radius: 2)
 
-                    // Summary
-                    Text(bit.summary)
+                    // Summary (intelligently truncated to fit)
+                    Text(bit.smartSummary)
                         .font(.body)
                         .foregroundColor(.white.opacity(0.9))
                         .lineLimit(4)
