@@ -12,6 +12,9 @@ struct SwipeableFeedView: View {
     // Bits to display for this session (captured at load time)
     @State private var sessionBits: [Bit] = []
 
+    // Track which bits user viewed this session (marked as seen when session ends)
+    @State private var sessionViewedIndices: Set<Int> = []
+
     // Onboarding state (4 steps: 0-3)
     // 0: Tap right for next
     // 1: Tap left to go back
@@ -96,11 +99,11 @@ struct SwipeableFeedView: View {
         }
         .task {
             await viewModel.loadBits()
-            // Capture unseen bits for this session (won't change as user marks them seen)
+            // Capture unseen bits for this session
             sessionBits = viewModel.unseenBits
-            // Mark the first bit as seen
+            // Track first bit as viewed (will be marked as seen when session ends)
             if !sessionBits.isEmpty {
-                viewModel.markAsSeen(sessionBits[0])
+                sessionViewedIndices.insert(0)
             }
         }
         .onAppear {
@@ -108,6 +111,10 @@ struct SwipeableFeedView: View {
             mediumImpact.prepare()
             heavyImpact.prepare()
             startPulseAnimation()
+        }
+        .onDisappear {
+            // Mark all viewed bits as seen when leaving the feed
+            markSessionBitsAsSeen()
         }
         .onChange(of: storage.hasCompletedOnboarding) { _, newValue in
             if !newValue {
@@ -122,6 +129,10 @@ struct SwipeableFeedView: View {
             if !storage.hasCompletedOnboarding && onboardingStep == 3 && newTab == .saved {
                 storage.showOnboardingComplete = true
                 storage.completeOnboarding()
+            }
+            // Mark viewed bits as seen when switching away from feed
+            if newTab != .feed {
+                markSessionBitsAsSeen()
             }
         }
     }
@@ -170,8 +181,10 @@ struct SwipeableFeedView: View {
                 currentIndex += 1
             }
             lightImpact.impactOccurred()
-            // Mark the new bit as seen
-            markCurrentBitAsSeen()
+            // Track this bit as viewed (will be marked as seen when session ends)
+            if currentIndex < sessionBits.count {
+                sessionViewedIndices.insert(currentIndex)
+            }
         } else {
             // At the very end (past caught up card)
             mediumImpact.impactOccurred()
@@ -217,9 +230,13 @@ struct SwipeableFeedView: View {
         }
     }
 
-    private func markCurrentBitAsSeen() {
-        guard currentIndex < sessionBits.count else { return }
-        viewModel.markAsSeen(sessionBits[currentIndex])
+    /// Mark all viewed bits as seen (called when session ends)
+    private func markSessionBitsAsSeen() {
+        for index in sessionViewedIndices {
+            if index < sessionBits.count {
+                viewModel.markAsSeen(sessionBits[index])
+            }
+        }
     }
 
     private func showToast(message: String, icon: String) {
