@@ -16,16 +16,21 @@ struct SwipeableFeedView: View {
     // Track which bits user viewed this session (marked as seen when session ends)
     @State private var sessionViewedIndices: Set<Int> = []
 
-    // Onboarding state (4 steps: 0-3)
+    // Onboarding state
+    // -1: Welcome screen (start here for first-time users)
     // 0: Tap right for next
     // 1: Tap left to go back
     // 2: Double-tap to save
     // 3: Point to Saved tab → completes when tapped
-    @State private var onboardingStep: Int = 0
+    @State private var onboardingStep: Int = -1
     @State private var pulseAnimation: Bool = false
 
+    private var showWelcomeScreen: Bool {
+        storage.hasCompletedOnboarding == false && onboardingStep == -1
+    }
+
     private var isOnboarding: Bool {
-        storage.hasCompletedOnboarding == false && onboardingStep < 4
+        storage.hasCompletedOnboarding == false && onboardingStep >= 0 && onboardingStep < 4
     }
 
     // Haptic feedback generators
@@ -97,6 +102,11 @@ struct SwipeableFeedView: View {
                 if isOnboarding && !sessionBits.isEmpty {
                     onboardingOverlay(geometry: geometry)
                 }
+
+                // Welcome screen for first-time users
+                if showWelcomeScreen && hasLoadedSession {
+                    welcomeOverlay
+                }
             }
         }
         .task {
@@ -123,7 +133,7 @@ struct SwipeableFeedView: View {
         .onChange(of: storage.hasCompletedOnboarding) { _, newValue in
             if !newValue {
                 // Reset onboarding when user chooses to see it again
-                onboardingStep = 0
+                onboardingStep = -1
                 currentIndex = 0
                 startPulseAnimation()
             }
@@ -262,6 +272,78 @@ struct SwipeableFeedView: View {
                 .tint(.white)
             Text("Loading bits...")
                 .foregroundColor(.white.opacity(0.7))
+        }
+    }
+
+    // Welcome screen for first-time users
+    private var welcomeOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.9)
+                .ignoresSafeArea()
+
+            VStack(spacing: 32) {
+                Spacer()
+
+                // App icon
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [.purple, .blue],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 100, height: 100)
+
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(.white)
+                }
+
+                VStack(spacing: 12) {
+                    Text("Welcome to Flashbit")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("Get the news in seconds, not minutes")
+                        .font(.body)
+                        .foregroundColor(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                }
+
+                Spacer()
+
+                VStack(spacing: 16) {
+                    // Start tutorial button
+                    Button(action: {
+                        withAnimation {
+                            onboardingStep = 0
+                        }
+                    }) {
+                        Text("Show me how it works")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(LinearGradient(
+                                colors: [.purple, .blue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ))
+                            .cornerRadius(12)
+                    }
+
+                    // Skip button
+                    Button(action: {
+                        storage.completeOnboarding()
+                    }) {
+                        Text("Skip, I'll figure it out")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 60)
+            }
         }
     }
 

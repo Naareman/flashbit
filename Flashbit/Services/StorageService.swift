@@ -30,9 +30,9 @@ class StorageService: ObservableObject {
 
     static let maxArticlesLimit = 500
     static let minArticlesLimit = 20
-    static let defaultMaxArticles = 500
+    static let defaultMaxArticles = 200
 
-    @Published var maxCachedArticles: Int = 500
+    @Published var maxCachedArticles: Int = 200
 
     init() {
         loadSavedBits()
