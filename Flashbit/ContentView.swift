@@ -91,9 +91,9 @@ struct BookmarksView: View {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             showSuccessToast = false
                         }
-                        // Clear saved bits from onboarding, then navigate to Feed
+                        // Clear only bits saved during onboarding, then navigate to Feed
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            storage.clearSavedBits()
+                            storage.clearOnboardingSavedBits()
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 selectedTab = .feed
                             }
@@ -114,7 +114,7 @@ struct BookmarksView: View {
                 .font(.title3)
                 .foregroundColor(.white)
 
-            Text("Double-tap any story to save it")
+            Text("Double tap any bit to save it")
                 .font(.subheadline)
                 .foregroundColor(.gray)
         }

@@ -12,6 +12,10 @@ class StorageService: ObservableObject {
     @Published var showOnboardingComplete: Bool = false
     @Published var shouldNavigateToFeedAfterOnboarding: Bool = false
 
+    // Track bits saved during current onboarding session
+    private var onboardingSavedBitIds: Set<UUID> = []
+    var isInOnboardingMode: Bool = false
+
     private let savedBitsKey = "savedBits"
     private let cachedBitsKey = "cachedBits"
     private let selectedCategoriesKey = "selectedCategories"
@@ -38,8 +42,10 @@ class StorageService: ObservableObject {
         // Check if key exists - if not, this is first launch
         if UserDefaults.standard.object(forKey: onboardingKey) == nil {
             hasCompletedOnboarding = false
+            isInOnboardingMode = true
         } else {
             hasCompletedOnboarding = UserDefaults.standard.bool(forKey: onboardingKey)
+            isInOnboardingMode = !hasCompletedOnboarding
         }
     }
 
@@ -49,10 +55,16 @@ class StorageService: ObservableObject {
         guard !isSaved(bit) else { return }
         savedBits.insert(bit, at: 0)
         persistSavedBits()
+
+        // Track if saved during onboarding
+        if isInOnboardingMode {
+            onboardingSavedBitIds.insert(bit.id)
+        }
     }
 
     func removeBit(_ bit: Bit) {
         savedBits.removeAll { $0.id == bit.id }
+        onboardingSavedBitIds.remove(bit.id)
         persistSavedBits()
     }
 
@@ -112,13 +124,27 @@ class StorageService: ObservableObject {
 
     // MARK: - Onboarding
 
+    func startOnboardingMode() {
+        isInOnboardingMode = true
+        onboardingSavedBitIds.removeAll()
+    }
+
     func completeOnboarding() {
         hasCompletedOnboarding = true
+        isInOnboardingMode = false
         UserDefaults.standard.set(true, forKey: onboardingKey)
+    }
+
+    /// Clears only bits that were saved during the current onboarding session
+    func clearOnboardingSavedBits() {
+        savedBits.removeAll { onboardingSavedBitIds.contains($0.id) }
+        onboardingSavedBitIds.removeAll()
+        persistSavedBits()
     }
 
     func clearSavedBits() {
         savedBits = []
+        onboardingSavedBitIds.removeAll()
         UserDefaults.standard.removeObject(forKey: savedBitsKey)
     }
 
@@ -126,6 +152,7 @@ class StorageService: ObservableObject {
     func resetOnboarding() {
         hasCompletedOnboarding = false
         UserDefaults.standard.set(false, forKey: onboardingKey)
+        startOnboardingMode()
         shouldNavigateToFeed = true
     }
 

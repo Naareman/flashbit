@@ -73,10 +73,18 @@ struct SwipeableFeedView: View {
                 if !viewModel.bits.isEmpty {
                     VStack {
                         progressBar
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 8)
+                            .background(
+                                LinearGradient(
+                                    colors: [.black.opacity(0.5), .black.opacity(0.3), .clear],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                         Spacer()
                     }
-                    .padding(.top, 50)
-                    .padding(.horizontal, 8)
+                    .padding(.top, 44)
                 }
 
                 // Toast message
@@ -366,7 +374,7 @@ struct SwipeableFeedView: View {
                 HStack {
                     Spacer()
                     onboardingPrompt(text: "Tap here", subtext: "for next bit")
-                        .padding(.trailing, 20)
+                        .padding(.trailing, 40)
                 }
                 .allowsHitTesting(false)
 
