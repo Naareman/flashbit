@@ -4,7 +4,11 @@ import Foundation
 class SettingsViewModel: ObservableObject {
     @Published var maxArticlesValue: Double = 500
 
-    private let storage = StorageService.shared
+    private let storage: StorageService
+
+    init(storage: StorageService = .shared) {
+        self.storage = storage
+    }
 
     func loadSettings() {
         maxArticlesValue = Double(storage.maxCachedArticles)

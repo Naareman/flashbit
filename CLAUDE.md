@@ -44,11 +44,13 @@ MVVM with feature-based folder organization:
 - Each screen gets its own ViewModel
 - Services have protocol definitions for testability
 - Category appearance (color, icon, gradient) is on the `BitCategory` enum
+- `@MainActor` on StorageService — all UI state is main-thread isolated
+- `@EnvironmentObject` for StorageService in views (not `@ObservedObject`)
+- ViewModels use dependency injection with default parameter values
+- `os.Logger` for production logging (not `print()`)
+- All interactive elements have accessibility labels/hints
+- Text opacity minimum 0.7 for WCAG contrast compliance
 
 ## Pending Tasks
 
-- Remove "One bit = one story" from onboarding article 1 summary
-- Make URL arrow not clickable during onboarding
-- Fix date format in Saved filter to use "d MMM yyyy" format
-- Re-fetch RSS if user increased max cached bits and reopened app
-- Change "Saved" navigation title to "Saved bits"
+None — all tasks completed.

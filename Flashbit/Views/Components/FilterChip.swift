@@ -10,11 +10,13 @@ struct FilterChip: View {
             Text(title)
                 .font(.caption)
                 .fontWeight(isSelected ? .semibold : .regular)
-                .foregroundColor(isSelected ? .white : .white.opacity(0.7))
+                .foregroundColor(isSelected ? .white : .white.opacity(0.8))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(isSelected ? Color.blue : Color.white.opacity(0.1))
                 .cornerRadius(6)
         }
+        .accessibilityLabel("\(title) filter")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

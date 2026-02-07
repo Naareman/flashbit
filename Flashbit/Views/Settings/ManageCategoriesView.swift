@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ManageCategoriesView: View {
-    @ObservedObject private var storage = StorageService.shared
+    @EnvironmentObject private var storage: StorageService
 
     var body: some View {
         List {
@@ -9,6 +9,7 @@ struct ManageCategoriesView: View {
                 Text("Select the categories you want to see in your bits")
                     .font(.subheadline)
                     .foregroundColor(.gray)
+                    .accessibilityLabel("Select the categories you want to see in your bits")
             }
 
             Section("Categories") {

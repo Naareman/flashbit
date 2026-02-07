@@ -1,7 +1,7 @@
 import Foundation
 
 /// A bite-sized news update
-struct Bit: Identifiable, Codable {
+struct Bit: Identifiable, Codable, Sendable {
     let id: UUID
     let headline: String
     let summary: String

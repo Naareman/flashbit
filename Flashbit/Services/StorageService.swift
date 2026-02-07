@@ -1,6 +1,7 @@
 import Foundation
 
 /// Manages persistent storage for saved articles and user preferences
+@MainActor
 class StorageService: ObservableObject, StorageServiceProtocol {
     static let shared = StorageService()
 
@@ -14,7 +15,7 @@ class StorageService: ObservableObject, StorageServiceProtocol {
 
     // Track bits saved during current onboarding session
     private var onboardingSavedBitIds: Set<UUID> = []
-    var isInOnboardingMode: Bool = false
+    private(set) var isInOnboardingMode: Bool = false
 
     private let savedBitsKey = "savedBits"
     private let cachedBitsKey = "cachedBits"
@@ -33,6 +34,7 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     static let defaultMaxArticles = AppConstants.defaultMaxArticles
 
     @Published var maxCachedArticles: Int = 200
+    @Published var needsRefetchAfterLimitIncrease: Bool = false
 
     init() {
         loadSavedBits()
@@ -254,13 +256,20 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     }
 
     func setMaxArticles(_ count: Int) {
+        let previousMax = maxCachedArticles
         // Clamp between min and max limits
         let clamped = max(Self.minArticlesLimit, min(count, Self.maxArticlesLimit))
         maxCachedArticles = clamped
         UserDefaults.standard.set(clamped, forKey: maxArticlesKey)
 
-        // NOTE: We don't trim the cache immediately to avoid disrupting the current session.
-        // The new limit will take effect on the next fetch/refresh.
+        // If limit was increased, flag that we should re-fetch to fill the new capacity
+        if clamped > previousMax {
+            needsRefetchAfterLimitIncrease = true
+        }
+    }
+
+    func clearLastFetchTimes() {
+        UserDefaults.standard.removeObject(forKey: lastFetchTimesKey)
     }
 
     // MARK: - Seen Tracking

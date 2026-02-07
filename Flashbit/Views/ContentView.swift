@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @ObservedObject private var storage = StorageService.shared
+    @EnvironmentObject private var storage: StorageService
     @State private var selectedTab: Tab = .feed
 
     var body: some View {
@@ -36,4 +36,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .environmentObject(StorageService.shared)
 }

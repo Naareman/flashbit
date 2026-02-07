@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @ObservedObject private var storage = StorageService.shared
+    @EnvironmentObject private var storage: StorageService
     @StateObject private var viewModel = SettingsViewModel()
 
     var body: some View {
@@ -37,6 +37,8 @@ struct SettingsView: View {
                             step: 20
                         )
                         .tint(.orange)
+                        .accessibilityLabel("Max cached bits")
+                        .accessibilityValue("\(Int(viewModel.maxArticlesValue)) bits")
                         .onChange(of: viewModel.maxArticlesValue) { _, newValue in
                             viewModel.updateMaxArticles(newValue)
                         }
@@ -64,6 +66,7 @@ struct SettingsView: View {
                         viewModel.resetOnboarding()
                     }
                     .foregroundColor(.blue)
+                    .accessibilityHint("Restarts the onboarding tutorial")
                 }
             }
             .navigationTitle("Settings")

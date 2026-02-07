@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CategoryToggleRow: View {
     let category: BitCategory
-    @ObservedObject private var storage = StorageService.shared
+    @EnvironmentObject private var storage: StorageService
 
     var body: some View {
         Button(action: {
@@ -24,5 +24,8 @@ struct CategoryToggleRow: View {
                 }
             }
         }
+        .accessibilityLabel("\(category.rawValue)")
+        .accessibilityValue(storage.isSelected(category) ? "Enabled" : "Disabled")
+        .accessibilityHint("Toggles \(category.rawValue) category")
     }
 }

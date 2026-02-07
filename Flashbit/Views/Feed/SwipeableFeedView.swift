@@ -4,7 +4,7 @@ import UIKit
 struct SwipeableFeedView: View {
     @Binding var selectedTab: Tab
     @StateObject private var viewModel = FeedViewModel()
-    @ObservedObject private var storage = StorageService.shared
+    @EnvironmentObject private var storage: StorageService
     @State private var currentIndex: Int = 0
     @State private var toastMessage: String? = nil
     @State private var toastIcon: String = "bookmark.fill"
@@ -42,7 +42,7 @@ struct SwipeableFeedView: View {
     private static let onboardingArticles: [Bit] = [
         Bit(
             headline: "Welcome to Flashbit",
-            summary: "One bit = One story",
+            summary: "Swipe through bite-sized news updates",
             category: .tech,
             source: "Flashbit",
             publishedAt: Date(),
@@ -106,9 +106,9 @@ struct SwipeableFeedView: View {
                 if !hasLoadedSession && !isOnboarding {
                     loadingView
                 } else if displayBits.isEmpty || isOnCaughtUpCard {
-                    caughtUpCard
+                    CaughtUpCard()
                 } else {
-                    BitCardView(bit: displayBits[currentIndex])
+                    BitCardView(bit: displayBits[currentIndex], isInteractive: !isOnboarding)
                         .id(currentIndex)
                         .transition(.opacity)
                 }
@@ -139,7 +139,7 @@ struct SwipeableFeedView: View {
                 if !displayBits.isEmpty && !isOnCaughtUpCard {
                     VStack {
                         HStack {
-                            progressBar
+                            FeedProgressBar(totalItems: totalItems, currentIndex: currentIndex, maxSegments: AppConstants.maxProgressSegments)
 
                             if !isOnboarding && !isOnCaughtUpCard {
                                 Text(remainingBitsText)
@@ -161,21 +161,30 @@ struct SwipeableFeedView: View {
 
                 // Toast message
                 if let message = toastMessage {
-                    toastView(message: message, icon: toastIcon)
+                    ToastView(message: message, icon: toastIcon)
                 }
 
                 // Interactive onboarding overlay
                 if isOnboarding && !displayBits.isEmpty {
-                    onboardingOverlay(geometry: geometry)
+                    OnboardingOverlay(step: onboardingStep, pulseAnimation: $pulseAnimation)
                 }
 
                 // Welcome screen for first-time users
                 if showWelcomeScreen && hasLoadedSession {
-                    welcomeOverlay
+                    WelcomeOverlay(
+                        onStartOnboarding: { withAnimation { onboardingStep = 0 } },
+                        onSkipOnboarding: { storage.completeOnboarding() }
+                    )
                 }
             }
         }
         .task {
+            // 0. If user increased cache limit, clear fetch times to force re-fetch
+            if storage.needsRefetchAfterLimitIncrease {
+                storage.needsRefetchAfterLimitIncrease = false
+                storage.clearLastFetchTimes()
+            }
+
             // 1. Show cached bits immediately so user can start swiping
             let hadCache = viewModel.loadCachedBits()
             if hadCache {
@@ -358,239 +367,9 @@ struct SwipeableFeedView: View {
         }
     }
 
-    // Welcome screen for first-time users
-    private var welcomeOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.9)
-                .ignoresSafeArea()
-
-            VStack(spacing: 32) {
-                Spacer()
-
-                Image("AppIconImage")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: AppConstants.welcomeIconSize, height: AppConstants.welcomeIconSize)
-                    .clipShape(RoundedRectangle(cornerRadius: AppConstants.welcomeIconCornerRadius))
-
-                VStack(spacing: 12) {
-                    Text("Welcome to Flashbit")
-                        .font(.system(size: AppConstants.welcomeTitleFontSize, weight: .bold))
-                        .foregroundColor(.white)
-
-                    Text("One bit = One story")
-                        .font(.body)
-                        .foregroundColor(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                }
-
-                Spacer()
-
-                VStack(spacing: 16) {
-                    Button(action: {
-                        withAnimation {
-                            onboardingStep = 0
-                        }
-                    }) {
-                        Text("Show me how it works")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ))
-                            .cornerRadius(12)
-                    }
-
-                    Button(action: {
-                        storage.completeOnboarding()
-                    }) {
-                        Text("Skip, I'll figure it out")
-                            .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.6))
-                    }
-                }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 60)
-            }
-        }
-    }
-
-    // "You're all caught up" as a full story card
-    private var caughtUpCard: some View {
-        ZStack {
-            LinearGradient(
-                colors: [.purple, .blue, .cyan],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 24) {
-                Spacer()
-
-                ZStack {
-                    Circle()
-                        .fill(.white.opacity(0.2))
-                        .frame(width: AppConstants.caughtUpIconSize, height: AppConstants.caughtUpIconSize)
-
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: AppConstants.caughtUpBoltSize))
-                        .foregroundColor(.white)
-                }
-
-                Text("That's everything for now")
-                    .font(.system(size: AppConstants.caughtUpTitleFontSize, weight: .bold))
-                    .foregroundColor(.white)
-
-                Spacer()
-                Spacer()
-            }
-            .padding(.bottom, AppConstants.contentBottomPadding)
-        }
-    }
-
-    private func toastView(message: String, icon: String) -> some View {
-        VStack {
-            Spacer()
-
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                Text(message)
-            }
-            .font(.headline)
-            .foregroundColor(.white)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(.ultraThinMaterial)
-            .cornerRadius(25)
-
-            Spacer()
-        }
-    }
-
-    // Interactive onboarding overlay
-    private func onboardingOverlay(geometry: GeometryProxy) -> some View {
-        ZStack {
-            Group {
-                switch onboardingStep {
-                case 0:
-                    HStack(spacing: 0) {
-                        Color.black.opacity(0.25)
-                        Color.clear
-                    }
-                case 1:
-                    HStack(spacing: 0) {
-                        Color.clear
-                        Color.black.opacity(0.25)
-                    }
-                case 2:
-                    Color.black.opacity(0.3)
-                case 3:
-                    VStack(spacing: 0) {
-                        Color.black.opacity(0.85)
-                        Color.black.opacity(0.15)
-                            .frame(height: AppConstants.tabBarHeight)
-                    }
-                default:
-                    Color.clear
-                }
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-
-            switch onboardingStep {
-            case 0:
-                HStack {
-                    Spacer()
-                    onboardingPrompt(text: "Next bit")
-                        .padding(.trailing, 40)
-                }
-                .allowsHitTesting(false)
-
-            case 1:
-                HStack {
-                    onboardingPrompt(text: "Previous bit")
-                        .padding(.leading, 20)
-                    Spacer()
-                }
-                .allowsHitTesting(false)
-
-            case 2:
-                onboardingPrompt(text: "Double-tap to save")
-                    .allowsHitTesting(false)
-
-            case 3:
-                VStack {
-                    Spacer()
-
-                    VStack(spacing: 12) {
-                        Text("Find your saved articles")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-
-                        Image(systemName: "arrow.down")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-                            .scaleEffect(pulseAnimation ? 1.3 : 0.9)
-                            .offset(y: pulseAnimation ? 6 : -6)
-                    }
-                    .padding(.bottom, 95)
-                }
-                .allowsHitTesting(false)
-
-            default:
-                EmptyView()
-            }
-        }
-    }
-
-    private func onboardingPrompt(text: String) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: "hand.tap.fill")
-                .font(.system(size: 36))
-                .foregroundColor(.white)
-                .scaleEffect(pulseAnimation ? 1.2 : 0.85)
-
-            Text(text)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .scaleEffect(pulseAnimation ? 1.05 : 0.95)
-        }
-        .opacity(pulseAnimation ? 1.0 : 0.6)
-    }
-
-    // Max number of progress segments to display
-    private let maxProgressSegments = AppConstants.maxProgressSegments
-
-    private var articlesPerSegment: Int {
-        max(1, Int(ceil(Double(totalItems) / Double(maxProgressSegments))))
-    }
-
-    private var progressSegmentCount: Int {
-        min(totalItems, maxProgressSegments)
-    }
-
-    private var currentProgressSegment: Int {
-        currentIndex / articlesPerSegment
-    }
-
-    private var progressBar: some View {
-        HStack(spacing: 4) {
-            ForEach(0..<progressSegmentCount, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(index <= currentProgressSegment ? Color.white : Color.white.opacity(0.3))
-                    .frame(height: 3)
-            }
-        }
-    }
 }
 
 #Preview {
     SwipeableFeedView(selectedTab: .constant(.feed))
+        .environmentObject(StorageService.shared)
 }

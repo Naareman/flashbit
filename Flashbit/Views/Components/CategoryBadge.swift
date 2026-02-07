@@ -11,5 +11,6 @@ struct CategoryBadge: View {
             .padding(.vertical, 6)
             .background(.ultraThinMaterial)
             .clipShape(Capsule())
+            .accessibilityLabel("\(category.rawValue) category")
     }
 }

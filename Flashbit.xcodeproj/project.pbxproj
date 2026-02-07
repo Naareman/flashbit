@@ -34,6 +34,12 @@
 		A10026 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20026; };
 		A10027 /* ManageCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20027; };
 		A10028 /* CategoryToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20028; };
+		A10030 /* URL+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20030; };
+		A10031 /* WelcomeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20031; };
+		A10032 /* CaughtUpCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20032; };
+		A10033 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20033; };
+		A10034 /* OnboardingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20034; };
+		A10035 /* FeedProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20035; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +71,12 @@
 		A20027 /* ManageCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageCategoriesView.swift; sourceTree = "<group>"; };
 		A20028 /* CategoryToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryToggleRow.swift; sourceTree = "<group>"; };
 		A20029 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20030 /* URL+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "URL+Extensions.swift"; sourceTree = "<group>"; };
+		A20031 /* WelcomeOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeOverlay.swift; sourceTree = "<group>"; };
+		A20032 /* CaughtUpCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaughtUpCard.swift; sourceTree = "<group>"; };
+		A20033 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		A20034 /* OnboardingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingOverlay.swift; sourceTree = "<group>"; };
+		A20035 /* FeedProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedProgressBar.swift; sourceTree = "<group>"; };
 		A30000 /* Flashbit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flashbit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -183,6 +195,7 @@
 			children = (
 				A20013 /* Date+Extensions.swift */,
 				A20014 /* String+Extensions.swift */,
+				A20030 /* URL+Extensions.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -200,8 +213,13 @@
 			isa = PBXGroup;
 			children = (
 				A20021 /* CategoryBadge.swift */,
+				A20032 /* CaughtUpCard.swift */,
+				A20035 /* FeedProgressBar.swift */,
 				A20022 /* FilterChip.swift */,
+				A20034 /* OnboardingOverlay.swift */,
 				A20023 /* SafariView.swift */,
+				A20033 /* ToastView.swift */,
+				A20031 /* WelcomeOverlay.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -329,6 +347,12 @@
 				A10026 /* SettingsView.swift in Sources */,
 				A10027 /* ManageCategoriesView.swift in Sources */,
 				A10028 /* CategoryToggleRow.swift in Sources */,
+				A10030 /* URL+Extensions.swift in Sources */,
+				A10031 /* WelcomeOverlay.swift in Sources */,
+				A10032 /* CaughtUpCard.swift in Sources */,
+				A10033 /* ToastView.swift in Sources */,
+				A10034 /* OnboardingOverlay.swift in Sources */,
+				A10035 /* FeedProgressBar.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

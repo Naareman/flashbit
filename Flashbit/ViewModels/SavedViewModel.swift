@@ -9,7 +9,11 @@ class SavedViewModel: ObservableObject {
     @Published var endDate: Date = Date()
     @Published var filterByDate: Bool = false
 
-    private let storage = StorageService.shared
+    private let storage: StorageService
+
+    init(storage: StorageService = .shared) {
+        self.storage = storage
+    }
 
     var filteredBits: [Bit] {
         var bits = storage.savedBits

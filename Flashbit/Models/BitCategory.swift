@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum BitCategory: String, Codable, CaseIterable {
+enum BitCategory: String, Codable, CaseIterable, Sendable {
     case breaking = "Breaking"
     case tech = "Tech"
     case business = "Business"

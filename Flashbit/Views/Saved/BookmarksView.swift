@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BookmarksView: View {
     @Binding var selectedTab: Tab
-    @ObservedObject private var storage = StorageService.shared
+    @EnvironmentObject private var storage: StorageService
     @StateObject private var viewModel = SavedViewModel()
     @State private var showSuccessToast: Bool = false
 
@@ -54,7 +54,7 @@ struct BookmarksView: View {
                     .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showSuccessToast)
                 }
             }
-            .navigationTitle("Saved")
+            .navigationTitle("Saved bits")
         }
         .onAppear {
             if storage.showOnboardingComplete {
@@ -93,7 +93,7 @@ struct BookmarksView: View {
                     Text("Filter")
                 }
                 .font(.subheadline)
-                .foregroundColor(viewModel.hasActiveFilters ? .blue : .white.opacity(0.7))
+                .foregroundColor(viewModel.hasActiveFilters ? .blue : .white.opacity(0.8))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(viewModel.hasActiveFilters ? Color.blue.opacity(0.2) : Color.white.opacity(0.1))
@@ -112,16 +112,18 @@ struct BookmarksView: View {
                     Text(viewModel.sortNewestFirst ? "Newest" : "Oldest")
                 }
                 .font(.subheadline)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(.white.opacity(0.8))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(8)
             }
+            .accessibilityLabel("Sort \(viewModel.sortNewestFirst ? "newest first" : "oldest first")")
+            .accessibilityHint("Toggles sort order")
 
             Text("\(viewModel.filteredBits.count) saved")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(.white.opacity(0.7))
                 .padding(.leading, 8)
         }
     }
@@ -133,7 +135,7 @@ struct BookmarksView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Category")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.6))
+                    .foregroundColor(.white.opacity(0.75))
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -158,7 +160,7 @@ struct BookmarksView: View {
                 HStack {
                     Text("Date Range")
                         .font(.caption)
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundColor(.white.opacity(0.75))
 
                     Spacer()
 
@@ -172,13 +174,15 @@ struct BookmarksView: View {
                         DatePicker("From", selection: $viewModel.startDate, displayedComponents: .date)
                             .datePickerStyle(.compact)
                             .labelsHidden()
+                            .environment(\.locale, Locale(identifier: "en_GB"))
 
                         Text("to")
-                            .foregroundColor(.white.opacity(0.6))
+                            .foregroundColor(.white.opacity(0.75))
 
                         DatePicker("To", selection: $viewModel.endDate, displayedComponents: .date)
                             .datePickerStyle(.compact)
                             .labelsHidden()
+                            .environment(\.locale, Locale(identifier: "en_GB"))
                     }
                     .font(.caption)
                 }
@@ -216,6 +220,8 @@ struct BookmarksView: View {
                 .foregroundColor(.gray)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("No saved bits yet. Double tap any bit to save it.")
     }
 
     private var noResultsView: some View {

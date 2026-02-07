@@ -1,5 +1,6 @@
 import SwiftUI
 import BackgroundTasks
+import os
 
 @main
 struct FlashbitApp: App {
@@ -10,7 +11,11 @@ struct FlashbitApp: App {
             forTaskWithIdentifier: AppConstants.backgroundTaskIdentifier,
             using: nil
         ) { task in
-            Self.handleBackgroundRefresh(task: task as! BGAppRefreshTask)
+            guard let refreshTask = task as? BGAppRefreshTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            Self.handleBackgroundRefresh(task: refreshTask)
         }
     }
 
@@ -18,6 +23,7 @@ struct FlashbitApp: App {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(.dark)
+                .environmentObject(StorageService.shared)
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .background {
@@ -33,7 +39,8 @@ struct FlashbitApp: App {
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {
-            print("Could not schedule background refresh: \(error)")
+            Logger(subsystem: "com.flashbit.app", category: "BackgroundRefresh")
+                .error("Could not schedule background refresh: \(error.localizedDescription)")
         }
     }
 
@@ -48,6 +55,8 @@ struct FlashbitApp: App {
                 _ = try await newsService.fetchBits()
                 task.setTaskCompleted(success: true)
             } catch {
+                Logger(subsystem: "com.flashbit.app", category: "BackgroundRefresh")
+                    .error("Background fetch failed: \(error.localizedDescription)")
                 task.setTaskCompleted(success: false)
             }
         }

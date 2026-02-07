@@ -180,6 +180,20 @@ class RSSParser: NSObject, XMLParserDelegate {
             .replacingOccurrences(of: "&#39;", with: "'")
             .replacingOccurrences(of: "&nbsp;", with: " ")
             .replacingOccurrences(of: "&#160;", with: " ")
+            .replacingOccurrences(of: "&#8217;", with: "\u{2019}")
+            .replacingOccurrences(of: "&#8216;", with: "\u{2018}")
+            .replacingOccurrences(of: "&#8220;", with: "\u{201C}")
+            .replacingOccurrences(of: "&#8221;", with: "\u{201D}")
+            .replacingOccurrences(of: "&#8211;", with: "\u{2013}")
+            .replacingOccurrences(of: "&#8212;", with: "\u{2014}")
+            .replacingOccurrences(of: "&#8230;", with: "\u{2026}")
+            .replacingOccurrences(of: "&mdash;", with: "\u{2014}")
+            .replacingOccurrences(of: "&ndash;", with: "\u{2013}")
+            .replacingOccurrences(of: "&lsquo;", with: "\u{2018}")
+            .replacingOccurrences(of: "&rsquo;", with: "\u{2019}")
+            .replacingOccurrences(of: "&ldquo;", with: "\u{201C}")
+            .replacingOccurrences(of: "&rdquo;", with: "\u{201D}")
+            .replacingOccurrences(of: "&hellip;", with: "\u{2026}")
 
         // Strip HTML tags using regex
         result = result.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
@@ -190,35 +204,30 @@ class RSSParser: NSObject, XMLParserDelegate {
         return result
     }
 
+    // Cached date formatters (DateFormatter creation is expensive)
+    private static let rssDateFormatters: [DateFormatter] = {
+        let f1 = DateFormatter()
+        f1.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
+        f1.locale = Locale(identifier: "en_US_POSIX")
+
+        let f2 = DateFormatter()
+        f2.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        f2.locale = Locale(identifier: "en_US_POSIX")
+
+        let f3 = DateFormatter()
+        f3.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
+        f3.locale = Locale(identifier: "en_US_POSIX")
+
+        return [f1, f2, f3]
+    }()
+
     /// Parses an RSS date string into a Date object
     static func parseDate(_ dateString: String) -> Date {
-        let formatters: [DateFormatter] = [
-            {
-                let df = DateFormatter()
-                df.dateFormat = "EEE, dd MMM yyyy HH:mm:ss Z"
-                df.locale = Locale(identifier: "en_US_POSIX")
-                return df
-            }(),
-            {
-                let df = DateFormatter()
-                df.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
-                df.locale = Locale(identifier: "en_US_POSIX")
-                return df
-            }(),
-            {
-                let df = DateFormatter()
-                df.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
-                df.locale = Locale(identifier: "en_US_POSIX")
-                return df
-            }()
-        ]
-
-        for formatter in formatters {
+        for formatter in rssDateFormatters {
             if let date = formatter.date(from: dateString) {
                 return date
             }
         }
-
         return Date()
     }
 }

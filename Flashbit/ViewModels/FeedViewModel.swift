@@ -6,8 +6,13 @@ class FeedViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var error: Error?
 
-    private let newsService = NewsService()
-    private let storage = StorageService.shared
+    private let newsService: NewsService
+    private let storage: StorageService
+
+    init(newsService: NewsService = NewsService(), storage: StorageService = .shared) {
+        self.newsService = newsService
+        self.storage = storage
+    }
 
     /// Returns only the bits the user hasn't seen yet
     var unseenBits: [Bit] {
@@ -61,6 +66,8 @@ class FeedViewModel: ObservableObject {
             let unseen = bits.filter { !storage.isSeen($0) }
             if !unseen.isEmpty {
                 onNewBits(unseen)
+            } else {
+                error = URLError(.cannotLoadFromNetwork)
             }
         }
 

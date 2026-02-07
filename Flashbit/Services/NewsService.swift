@@ -1,11 +1,13 @@
 import Foundation
+import os
 
 actor NewsService: NewsServiceProtocol {
     private let session: URLSession
     private let rssParser = RSSParser()
+    private let logger = Logger(subsystem: "com.flashbit.app", category: "NewsService")
 
     // RSS Feed URLs with source info
-    struct FeedConfig {
+    struct FeedConfig: Sendable {
         let url: String
         let source: String
         let category: BitCategory
@@ -32,8 +34,7 @@ actor NewsService: NewsServiceProtocol {
     /// On first fetch: gets 50 per source
     /// On subsequent fetches: gets only new articles since last fetch
     func fetchBits() async throws -> [Bit] {
-        let storage = await MainActor.run { StorageService.shared }
-        let isFirstFetch = await MainActor.run { storage.isFirstFetch }
+        let isFirstFetch = await StorageService.shared.isFirstFetch
 
         // Fetch all RSS feeds concurrently
         async let bbcBits = fetchRSSFeed(feed: Self.feeds[0], isFirstFetch: isFirstFetch)
@@ -51,44 +52,37 @@ actor NewsService: NewsServiceProtocol {
             case .success(let bits):
                 newBits.append(contentsOf: bits)
                 successCount += 1
-            case .failure:
-                continue
+            case .failure(let error):
+                logger.warning("Feed fetch failed: \(error.localizedDescription)")
             }
         }
 
         // If all feeds failed, return cached data as fallback
         if successCount == 0 {
-            let cached = await MainActor.run { storage.cachedBits }
+            let cached = await StorageService.shared.cachedBits
             if !cached.isEmpty {
                 return cached
             }
             // Last resort: return mock data
-            return await MainActor.run {
-                Array(FeedViewModel.mockBits.prefix(10))
-            }
+            return await FeedViewModel.mockBits.prefix(10).map { $0 }
         }
 
         // Mark first fetch complete if this was the first time
         if isFirstFetch {
-            await MainActor.run {
-                storage.markFirstFetchComplete()
-            }
+            await StorageService.shared.markFirstFetchComplete()
         }
 
         // Update cache with new bits
-        await MainActor.run {
-            storage.updateCachedBits(with: newBits)
-        }
+        await StorageService.shared.updateCachedBits(with: newBits)
 
         // Return all cached bits (sorted by date)
-        return await MainActor.run { storage.cachedBits }
+        return await StorageService.shared.cachedBits
     }
 
     /// Fetches RSS feeds one by one, calling onBatchReady after each feed completes
     /// This allows showing articles progressively as they load
     func fetchBitsProgressively(onBatchReady: @escaping @MainActor ([Bit]) -> Void) async {
-        let storage = await MainActor.run { StorageService.shared }
-        let isFirstFetch = await MainActor.run { storage.isFirstFetch }
+        let isFirstFetch = await StorageService.shared.isFirstFetch
 
         // Fetch feeds concurrently but process results as they arrive
         await withTaskGroup(of: Result<[Bit], Error>.self) { group in
@@ -104,22 +98,19 @@ actor NewsService: NewsServiceProtocol {
                 case .success(let bits):
                     if !bits.isEmpty {
                         // Update cache and notify immediately
-                        await MainActor.run {
-                            storage.updateCachedBits(with: bits)
-                            onBatchReady(storage.cachedBits)
-                        }
+                        await StorageService.shared.updateCachedBits(with: bits)
+                        let cached = await StorageService.shared.cachedBits
+                        await onBatchReady(cached)
                         successCount += 1
                     }
-                case .failure:
-                    continue
+                case .failure(let error):
+                    logger.warning("Progressive feed fetch failed: \(error.localizedDescription)")
                 }
             }
 
             // Mark first fetch complete
             if isFirstFetch && successCount > 0 {
-                await MainActor.run {
-                    storage.markFirstFetchComplete()
-                }
+                await StorageService.shared.markFirstFetchComplete()
             }
         }
     }
@@ -131,11 +122,10 @@ actor NewsService: NewsServiceProtocol {
         }
 
         // Get last fetch time for this source (for delta fetching)
-        let storage = await MainActor.run { StorageService.shared }
-        let lastFetchTime = await MainActor.run { storage.getLastFetchTime(for: feed.source) }
+        let lastFetchTime = await StorageService.shared.getLastFetchTime(for: feed.source)
 
         do {
-            let (data, response) = try await session.data(from: url)
+            let (data, response) = try await fetchWithRetry(url: url)
 
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode) else {
@@ -144,7 +134,8 @@ actor NewsService: NewsServiceProtocol {
 
             let items = rssParser.parse(data: data)
             var bits = items.compactMap { item -> Bit? in
-                guard !item.title.isEmpty else { return nil }
+                let trimmedTitle = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedTitle.isEmpty else { return nil }
 
                 let publishedAt = RSSParser.parseDate(item.pubDate)
 
@@ -156,8 +147,8 @@ actor NewsService: NewsServiceProtocol {
                 }
 
                 return Bit(
-                    headline: item.title,
-                    summary: item.description.isEmpty ? item.title : item.description,
+                    headline: trimmedTitle,
+                    summary: item.description.isEmpty ? trimmedTitle : item.description,
                     category: feed.category,
                     source: feed.source,
                     publishedAt: publishedAt,
@@ -172,14 +163,28 @@ actor NewsService: NewsServiceProtocol {
             }
 
             // Update last fetch time for this source
-            await MainActor.run {
-                storage.setLastFetchTime(Date(), for: feed.source)
-            }
+            await StorageService.shared.setLastFetchTime(Date(), for: feed.source)
 
             return .success(bits)
         } catch {
             return .failure(error)
         }
+    }
+
+    /// Fetches data with retry and exponential backoff
+    private func fetchWithRetry(url: URL, maxRetries: Int = 2) async throws -> (Data, URLResponse) {
+        var lastError: Error?
+        for attempt in 0...maxRetries {
+            do {
+                return try await session.data(from: url)
+            } catch {
+                lastError = error
+                if attempt < maxRetries {
+                    try await Task.sleep(for: .seconds(Double(attempt + 1)))
+                }
+            }
+        }
+        throw lastError ?? URLError(.unknown)
     }
 
     /// Fetches bits for a specific category (from cache)

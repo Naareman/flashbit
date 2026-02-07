@@ -1,5 +1,5 @@
 import Foundation
 
-enum Tab {
+enum Tab: Sendable {
     case feed, saved, settings
 }

@@ -4,7 +4,8 @@ import SafariServices
 
 struct BitCardView: View {
     let bit: Bit
-    @State private var showingSafari = false
+    @State private var safariURL: URL? = nil
+    var isInteractive: Bool = true
 
     // Layout constants
     private let headlineFont = UIFont.systemFont(ofSize: AppConstants.headlineFontSize, weight: .bold)
@@ -22,6 +23,7 @@ struct BitCardView: View {
 
                 // Category badge - positioned below progress bar
                 CategoryBadge(category: bit.category)
+                    .accessibilityLabel("\(bit.category.rawValue) category")
                     .padding(.top, AppConstants.categoryBadgeTopPadding)
                     .padding(.leading, AppConstants.cardHorizontalPadding)
 
@@ -30,9 +32,9 @@ struct BitCardView: View {
                     Spacer(minLength: 20)
 
                     // Headline - tappable to open article
-                    if bit.articleURL != nil {
+                    if bit.articleURL != nil && isInteractive {
                         Button(action: {
-                            showingSafari = true
+                            safariURL = bit.articleURL
                         }) {
                             HStack(alignment: .top, spacing: 6) {
                                 Text(bit.headline)
@@ -41,15 +43,18 @@ struct BitCardView: View {
                                     .multilineTextAlignment(.leading)
                                 Image(systemName: "arrow.up.right")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.7))
+                                    .foregroundColor(.white.opacity(0.85))
                                     .padding(.top, 6)
                             }
                         }
+                        .accessibilityLabel(bit.headline)
+                        .accessibilityHint("Opens full article in browser")
                         .shadow(radius: 2)
                     } else {
                         Text(bit.headline)
                             .font(.system(size: AppConstants.headlineFontSize, weight: .bold))
                             .foregroundColor(.white)
+                            .accessibilityLabel(bit.headline)
                             .shadow(radius: 2)
                     }
 
@@ -67,16 +72,18 @@ struct BitCardView: View {
                         Text(bit.source)
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.white.opacity(0.85))
                             .lineLimit(1)
 
                         Spacer(minLength: 8)
 
                         Text(bit.publishedAt.timeAgoDisplay())
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(.white.opacity(0.8))
                             .fixedSize(horizontal: true, vertical: false)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(bit.source), \(bit.publishedAt.timeAgoDisplay())")
                 }
                 .padding(.horizontal, AppConstants.cardHorizontalPadding)
                 .padding(.top, AppConstants.contentTopPadding)
@@ -92,11 +99,9 @@ struct BitCardView: View {
             .clipShape(RoundedRectangle(cornerRadius: 0))
         }
         .ignoresSafeArea()
-        .fullScreenCover(isPresented: $showingSafari) {
-            if let url = bit.articleURL {
-                SafariView(url: url)
-                    .ignoresSafeArea()
-            }
+        .fullScreenCover(item: $safariURL) { url in
+            SafariView(url: url)
+                .ignoresSafeArea()
         }
     }
 
