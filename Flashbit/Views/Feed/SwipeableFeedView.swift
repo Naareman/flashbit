@@ -367,13 +367,11 @@ struct SwipeableFeedView: View {
             VStack(spacing: 32) {
                 Spacer()
 
-                if let uiImage = UIImage(named: "AppIcon") {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: AppConstants.welcomeIconSize, height: AppConstants.welcomeIconSize)
-                        .clipShape(RoundedRectangle(cornerRadius: AppConstants.welcomeIconCornerRadius))
-                }
+                Image("AppIconImage")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: AppConstants.welcomeIconSize, height: AppConstants.welcomeIconSize)
+                    .clipShape(RoundedRectangle(cornerRadius: AppConstants.welcomeIconCornerRadius))
 
                 VStack(spacing: 12) {
                     Text("Welcome to Flashbit")
