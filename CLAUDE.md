@@ -50,6 +50,11 @@ MVVM with feature-based folder organization:
 - `os.Logger` for production logging (not `print()`)
 - All interactive elements have accessibility labels/hints
 - Text opacity minimum 0.7 for WCAG contrast compliance
+- `OnboardingStep` enum for type-safe onboarding state
+- `@ScaledMetric` for Dynamic Type font scaling
+- `@Environment(\.accessibilityReduceMotion)` for animation control
+- Batched `seenBitIds` persistence (debounced 1s) for performance
+- `Task.sleep` over `DispatchQueue.main.asyncAfter` for async sequences
 
 ## Pending Tasks
 

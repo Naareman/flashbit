@@ -7,7 +7,7 @@ actor NewsService: NewsServiceProtocol {
     private let logger = Logger(subsystem: "com.flashbit.app", category: "NewsService")
 
     // RSS Feed URLs with source info
-    struct FeedConfig: Sendable {
+    private struct FeedConfig: Sendable {
         let url: String
         let source: String
         let category: BitCategory
@@ -129,6 +129,8 @@ actor NewsService: NewsServiceProtocol {
 
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+                logger.warning("HTTP \(statusCode) from \(feed.source)")
                 return .failure(URLError(.badServerResponse))
             }
 

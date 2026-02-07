@@ -11,7 +11,6 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     @Published var hasCompletedOnboarding: Bool = false
     @Published var shouldNavigateToFeed: Bool = false
     @Published var showOnboardingComplete: Bool = false
-    @Published var shouldNavigateToFeedAfterOnboarding: Bool = false
 
     // Track bits saved during current onboarding session
     private var onboardingSavedBitIds: Set<UUID> = []
@@ -26,8 +25,9 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     private let maxArticlesKey = "maxCachedArticles"
     private let seenBitIdsKey = "seenBitIds"
 
-    // Track which articles the user has already seen
-    private var seenBitIds: Set<String> = [] // Using articleURL string as identifier
+    // Track which articles the user has already seen (uses bitIdentifier)
+    private var seenBitIds: Set<String> = []
+    private var seenBitIdsPendingPersist = false
 
     static let maxArticlesLimit = AppConstants.maxArticlesLimit
     static let minArticlesLimit = AppConstants.minArticlesLimit
@@ -174,21 +174,15 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     }
 
     func updateCachedBits(with newBits: [Bit]) {
-        // Merge new bits with existing, avoiding duplicates by articleURL
-        var existingURLs = Set(cachedBits.compactMap { $0.articleURL?.absoluteString })
+        // Merge new bits with existing, avoiding duplicates using consistent identifier
+        var existingIDs = Set(cachedBits.map { bitIdentifier(for: $0) })
         var merged = cachedBits
 
         for bit in newBits {
-            if let urlString = bit.articleURL?.absoluteString {
-                if !existingURLs.contains(urlString) {
-                    merged.append(bit)
-                    existingURLs.insert(urlString)
-                }
-            } else {
-                // No URL - check by headline to avoid duplicates
-                if !merged.contains(where: { $0.headline == bit.headline && $0.source == bit.source }) {
-                    merged.append(bit)
-                }
+            let id = bitIdentifier(for: bit)
+            if !existingIDs.contains(id) {
+                merged.append(bit)
+                existingIDs.insert(id)
             }
         }
 
@@ -279,12 +273,20 @@ class StorageService: ObservableObject, StorageServiceProtocol {
         cachedBits.filter { !isSeen($0) }
     }
 
-    /// Mark a bit as seen by the user
+    /// Mark a bit as seen by the user (batched persistence)
     func markAsSeen(_ bit: Bit) {
         let identifier = bitIdentifier(for: bit)
         guard !seenBitIds.contains(identifier) else { return }
         seenBitIds.insert(identifier)
-        persistSeenBitIds()
+
+        // Batch persistence: schedule a single write instead of writing per-mark
+        if !seenBitIdsPendingPersist {
+            seenBitIdsPendingPersist = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.seenBitIdsPendingPersist = false
+                self?.persistSeenBitIds()
+            }
+        }
     }
 
     /// Check if user has already seen this bit

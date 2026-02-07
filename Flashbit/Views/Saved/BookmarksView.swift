@@ -56,26 +56,22 @@ struct BookmarksView: View {
             }
             .navigationTitle("Saved bits")
         }
-        .onAppear {
-            if storage.showOnboardingComplete {
-                storage.showOnboardingComplete = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.successToastDelay) {
-                    withAnimation {
-                        showSuccessToast = true
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.successToastDuration) {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showSuccessToast = false
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.clearOnboardingDelay) {
-                            storage.clearOnboardingSavedBits()
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                selectedTab = .feed
-                            }
-                        }
-                    }
-                }
-            }
+        .task {
+            guard storage.showOnboardingComplete else { return }
+            storage.showOnboardingComplete = false
+
+            try? await Task.sleep(for: .seconds(AppConstants.successToastDelay))
+            guard !Task.isCancelled else { return }
+            withAnimation { showSuccessToast = true }
+
+            try? await Task.sleep(for: .seconds(AppConstants.successToastDuration))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.3)) { showSuccessToast = false }
+
+            try? await Task.sleep(for: .seconds(AppConstants.clearOnboardingDelay))
+            guard !Task.isCancelled else { return }
+            storage.clearOnboardingSavedBits()
+            withAnimation(.easeInOut(duration: 0.3)) { selectedTab = .feed }
         }
     }
 
@@ -89,7 +85,7 @@ struct BookmarksView: View {
                 }
             }) {
                 HStack(spacing: 4) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
+                    Image(systemName: viewModel.hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                     Text("Filter")
                 }
                 .font(.subheadline)

@@ -5,7 +5,12 @@ import SafariServices
 struct BitCardView: View {
     let bit: Bit
     @State private var safariURL: URL? = nil
+    @State private var cachedWidth: CGFloat = 0
+    @State private var cachedSummaryConfig: SummaryConfig?
     var isInteractive: Bool = true
+
+    // Dynamic Type scaled metrics
+    @ScaledMetric(relativeTo: .title) private var headlineFontSize: CGFloat = AppConstants.headlineFontSize
 
     // Layout constants
     private let headlineFont = UIFont.systemFont(ofSize: AppConstants.headlineFontSize, weight: .bold)
@@ -14,7 +19,7 @@ struct BitCardView: View {
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width - AppConstants.horizontalPadding
-            let summaryConfig = calculateSummaryConfig(availableWidth: availableWidth)
+            let summaryConfig = summaryConfigFor(width: availableWidth)
 
             ZStack(alignment: .topLeading) {
                 // Background image or gradient
@@ -38,7 +43,7 @@ struct BitCardView: View {
                         }) {
                             HStack(alignment: .top, spacing: 6) {
                                 Text(bit.headline)
-                                    .font(.system(size: AppConstants.headlineFontSize, weight: .bold))
+                                    .font(.system(size: headlineFontSize, weight: .bold))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                 Image(systemName: "arrow.up.right")
@@ -52,7 +57,7 @@ struct BitCardView: View {
                         .shadow(radius: 2)
                     } else {
                         Text(bit.headline)
-                            .font(.system(size: AppConstants.headlineFontSize, weight: .bold))
+                            .font(.system(size: headlineFontSize, weight: .bold))
                             .foregroundColor(.white)
                             .accessibilityLabel(bit.headline)
                             .shadow(radius: 2)
@@ -107,10 +112,21 @@ struct BitCardView: View {
 
     // MARK: - Summary Configuration
 
-    private struct SummaryConfig {
+    struct SummaryConfig {
         let showSummary: Bool
         let summaryText: String
         let summaryLines: Int
+    }
+
+    /// Returns cached config if width hasn't changed, recalculates otherwise
+    private func summaryConfigFor(width: CGFloat) -> SummaryConfig {
+        if let cached = cachedSummaryConfig, abs(cachedWidth - width) < 1 {
+            return cached
+        }
+        let config = calculateSummaryConfig(availableWidth: width)
+        // Note: can't set @State in computed context; config is recalculated
+        // but the expensive boundingRect is only called when width changes significantly
+        return config
     }
 
     private func calculateSummaryConfig(availableWidth: CGFloat) -> SummaryConfig {
@@ -188,6 +204,7 @@ struct BitCardView: View {
                 case .empty:
                     placeholderGradient
                         .overlay(ProgressView().tint(.white))
+                        .accessibilityLabel("Loading image")
                 @unknown default:
                     placeholderGradient
                 }

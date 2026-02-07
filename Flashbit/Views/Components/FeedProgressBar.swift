@@ -14,7 +14,8 @@ struct FeedProgressBar: View {
     }
 
     private var currentSegment: Int {
-        currentIndex / articlesPerSegment
+        guard totalItems > 0 else { return 0 }
+        return min(currentIndex * segmentCount / totalItems, segmentCount - 1)
     }
 
     var body: some View {

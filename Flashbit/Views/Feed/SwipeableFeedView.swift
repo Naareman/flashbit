@@ -1,6 +1,19 @@
 import SwiftUI
 import UIKit
 
+/// Onboarding tutorial steps
+enum OnboardingStep: Int, Comparable {
+    case welcome = -1
+    case tapNext = 0
+    case tapPrevious = 1
+    case doubleTapSave = 2
+    case checkSavedTab = 3
+
+    static func < (lhs: OnboardingStep, rhs: OnboardingStep) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+}
+
 struct SwipeableFeedView: View {
     @Binding var selectedTab: Tab
     @StateObject private var viewModel = FeedViewModel()
@@ -11,26 +24,22 @@ struct SwipeableFeedView: View {
 
     // Bits to display for this session (captured at load time)
     @State private var sessionBits: [Bit] = []
+    @State private var sessionBitIDs: Set<UUID> = []
     @State private var hasLoadedSession: Bool = false
 
     // Track which bits user viewed this session (marked as seen when session ends)
     @State private var sessionViewedIndices: Set<Int> = []
 
     // Onboarding state
-    // -1: Welcome screen (start here for first-time users)
-    // 0: Tap right for next
-    // 1: Tap left to go back
-    // 2: Double-tap to save
-    // 3: Point to Saved tab -> completes when tapped
-    @State private var onboardingStep: Int = -1
+    @State private var onboardingStep: OnboardingStep = .welcome
     @State private var pulseAnimation: Bool = false
 
     private var showWelcomeScreen: Bool {
-        storage.hasCompletedOnboarding == false && onboardingStep == -1
+        storage.hasCompletedOnboarding == false && onboardingStep == .welcome
     }
 
     private var isOnboarding: Bool {
-        storage.hasCompletedOnboarding == false && onboardingStep >= 0 && onboardingStep < 4
+        storage.hasCompletedOnboarding == false && onboardingStep >= .tapNext && onboardingStep <= .checkSavedTab
     }
 
     // Haptic feedback generators
@@ -68,7 +77,7 @@ struct SwipeableFeedView: View {
 
     // Bits to display - uses onboarding articles when in tutorial mode
     private var displayBits: [Bit] {
-        if !storage.hasCompletedOnboarding && onboardingStep >= 0 {
+        if !storage.hasCompletedOnboarding && onboardingStep >= .tapNext {
             return Self.onboardingArticles
         }
         return sessionBits
@@ -81,6 +90,12 @@ struct SwipeableFeedView: View {
 
     private var isOnCaughtUpCard: Bool {
         currentIndex >= displayBits.count
+    }
+
+    /// Currently displayed bit, with safe bounds checking
+    private var currentBit: Bit? {
+        guard currentIndex >= 0, currentIndex < displayBits.count else { return nil }
+        return displayBits[currentIndex]
     }
 
     // Remaining bits count for display
@@ -107,15 +122,31 @@ struct SwipeableFeedView: View {
                     loadingView
                 } else if displayBits.isEmpty || isOnCaughtUpCard {
                     CaughtUpCard()
-                } else {
-                    BitCardView(bit: displayBits[currentIndex], isInteractive: !isOnboarding)
+                } else if let bit = currentBit {
+                    BitCardView(bit: bit, isInteractive: !isOnboarding)
                         .id(currentIndex)
                         .transition(.opacity)
                 }
 
+                // Error banner when fetch fails
+                if let errorMessage = viewModel.errorMessage, displayBits.isEmpty {
+                    VStack {
+                        Spacer()
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.red.opacity(0.8))
+                            .cornerRadius(10)
+                            .padding(.horizontal)
+                            .padding(.bottom, 100)
+                    }
+                    .accessibilityLabel(errorMessage)
+                }
+
                 // Tap zones - handles both single and double taps (only on article cards)
                 // Excludes bottom area to allow headline tap to open article
-                if !displayBits.isEmpty && !isOnCaughtUpCard {
+                if currentBit != nil {
                     VStack(spacing: 0) {
                         HStack(spacing: 0) {
                             Color.clear
@@ -136,7 +167,7 @@ struct SwipeableFeedView: View {
                 }
 
                 // Progress bar and remaining counter
-                if !displayBits.isEmpty && !isOnCaughtUpCard {
+                if currentBit != nil {
                     VStack {
                         HStack {
                             FeedProgressBar(totalItems: totalItems, currentIndex: currentIndex, maxSegments: AppConstants.maxProgressSegments)
@@ -150,6 +181,7 @@ struct SwipeableFeedView: View {
                                     .padding(.vertical, 4)
                                     .background(.ultraThinMaterial)
                                     .clipShape(Capsule())
+                                    .accessibilityLabel("\(remainingBitsCount) bits remaining")
                             }
                         }
                         .padding(.horizontal, 8)
@@ -166,13 +198,13 @@ struct SwipeableFeedView: View {
 
                 // Interactive onboarding overlay
                 if isOnboarding && !displayBits.isEmpty {
-                    OnboardingOverlay(step: onboardingStep, pulseAnimation: $pulseAnimation)
+                    OnboardingOverlay(step: onboardingStep.rawValue, pulseAnimation: $pulseAnimation)
                 }
 
                 // Welcome screen for first-time users
                 if showWelcomeScreen && hasLoadedSession {
                     WelcomeOverlay(
-                        onStartOnboarding: { withAnimation { onboardingStep = 0 } },
+                        onStartOnboarding: { withAnimation { onboardingStep = .tapNext } },
                         onSkipOnboarding: { storage.completeOnboarding() }
                     )
                 }
@@ -188,7 +220,9 @@ struct SwipeableFeedView: View {
             // 1. Show cached bits immediately so user can start swiping
             let hadCache = viewModel.loadCachedBits()
             if hadCache {
-                sessionBits = viewModel.unseenBits
+                let unseen = viewModel.unseenBits
+                sessionBits = unseen
+                sessionBitIDs = Set(unseen.map { $0.id })
                 if !sessionBits.isEmpty {
                     sessionViewedIndices.insert(0)
                 }
@@ -196,26 +230,29 @@ struct SwipeableFeedView: View {
             hasLoadedSession = true
 
             // 2. Fetch fresh content in background, append new unseen bits as they arrive
-            await viewModel.fetchFreshBits { [self] newBits in
+            await viewModel.fetchFreshBits { newBits in
                 if sessionBits.isEmpty {
                     // No cached content was available — this is the first batch
                     sessionBits = newBits
+                    sessionBitIDs = Set(newBits.map { $0.id })
                     if !sessionBits.isEmpty {
                         sessionViewedIndices.insert(0)
                     }
                 } else {
                     // Append new bits after the current position so feed grows while swiping
-                    let existingIDs = Set(sessionBits.map { $0.id })
-                    let toAdd = newBits.filter { !existingIDs.contains($0.id) }
+                    let toAdd = newBits.filter { !sessionBitIDs.contains($0.id) }
                     if !toAdd.isEmpty {
                         sessionBits.append(contentsOf: toAdd)
+                        for bit in toAdd { sessionBitIDs.insert(bit.id) }
                     }
                 }
             }
 
             // 3. If still empty after everything, try unseen from whatever we have
             if sessionBits.isEmpty {
-                sessionBits = viewModel.unseenBits
+                let unseen = viewModel.unseenBits
+                sessionBits = unseen
+                sessionBitIDs = Set(unseen.map { $0.id })
                 if !sessionBits.isEmpty {
                     sessionViewedIndices.insert(0)
                 }
@@ -232,13 +269,13 @@ struct SwipeableFeedView: View {
         }
         .onChange(of: storage.hasCompletedOnboarding) { _, newValue in
             if !newValue {
-                onboardingStep = -1
+                onboardingStep = .welcome
                 currentIndex = 0
                 startPulseAnimation()
             }
         }
         .onChange(of: selectedTab) { _, newTab in
-            if !storage.hasCompletedOnboarding && onboardingStep == 3 && newTab == .saved {
+            if !storage.hasCompletedOnboarding && onboardingStep == .checkSavedTab && newTab == .saved {
                 storage.showOnboardingComplete = true
                 storage.completeOnboarding()
             }
@@ -255,36 +292,30 @@ struct SwipeableFeedView: View {
     }
 
     private func handleRightTap() {
-        if isOnboarding && onboardingStep == 0 {
+        if isOnboarding && onboardingStep == .tapNext {
             withAnimation {
-                onboardingStep = 1
+                onboardingStep = .tapPrevious
             }
-            goToNext()
-        } else if isOnboarding && onboardingStep == 1 {
-            goToNext()
-        } else {
-            goToNext()
         }
+        goToNext()
     }
 
     private func handleLeftTap() {
-        if isOnboarding && onboardingStep == 1 {
+        if isOnboarding && onboardingStep == .tapPrevious {
             withAnimation {
-                onboardingStep = 2
+                onboardingStep = .doubleTapSave
             }
-            goToPrevious()
-        } else {
-            goToPrevious()
         }
+        goToPrevious()
     }
 
     private func refreshFeed() async {
         currentIndex = 0
         await viewModel.refreshBits { newBits in
-            let existingIDs = Set(sessionBits.map { $0.id })
-            let toAdd = newBits.filter { !existingIDs.contains($0.id) }
+            let toAdd = newBits.filter { !sessionBitIDs.contains($0.id) }
             if !toAdd.isEmpty {
                 sessionBits.append(contentsOf: toAdd)
+                for bit in toAdd { sessionBitIDs.insert(bit.id) }
             }
         }
     }
@@ -315,8 +346,7 @@ struct SwipeableFeedView: View {
     }
 
     private func saveBit() {
-        guard !isOnCaughtUpCard, currentIndex < displayBits.count else { return }
-        let bit = displayBits[currentIndex]
+        guard let bit = currentBit else { return }
 
         if storage.isSaved(bit) {
             storage.removeBit(bit)
@@ -327,10 +357,12 @@ struct SwipeableFeedView: View {
             heavyImpact.impactOccurred()
             showToast(message: "Saved bit", icon: "bookmark.fill")
 
-            if !storage.hasCompletedOnboarding && onboardingStep == 2 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.onboardingDelay) {
+            if !storage.hasCompletedOnboarding && onboardingStep == .doubleTapSave {
+                Task {
+                    try? await Task.sleep(for: .seconds(AppConstants.onboardingDelay))
+                    guard !Task.isCancelled else { return }
                     withAnimation {
-                        onboardingStep = 3
+                        onboardingStep = .checkSavedTab
                     }
                 }
             }
@@ -350,7 +382,9 @@ struct SwipeableFeedView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             toastMessage = message
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppConstants.toastDuration) {
+        Task {
+            try? await Task.sleep(for: .seconds(AppConstants.toastDuration))
+            guard !Task.isCancelled else { return }
             withAnimation {
                 toastMessage = nil
             }
@@ -365,6 +399,8 @@ struct SwipeableFeedView: View {
             Text("Loading bits...")
                 .foregroundColor(.white.opacity(0.7))
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Loading bits")
     }
 
 }

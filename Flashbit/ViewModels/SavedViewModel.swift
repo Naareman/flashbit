@@ -23,7 +23,9 @@ class SavedViewModel: ObservableObject {
         }
 
         if filterByDate {
-            bits = bits.filter { $0.publishedAt >= startDate && $0.publishedAt <= endDate }
+            let dayStart = Calendar.current.startOfDay(for: startDate)
+            let dayEnd = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: endDate)) ?? endDate
+            bits = bits.filter { $0.publishedAt >= dayStart && $0.publishedAt < dayEnd }
         }
 
         if sortNewestFirst {

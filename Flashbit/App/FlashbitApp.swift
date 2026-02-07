@@ -49,7 +49,7 @@ struct FlashbitApp: App {
         request.earliestBeginDate = Date(timeIntervalSinceNow: AppConstants.backgroundRefreshInterval)
         try? BGTaskScheduler.shared.submit(request)
 
-        let fetchTask = Task {
+        let fetchTask = Task { @MainActor in
             do {
                 let newsService = NewsService()
                 _ = try await newsService.fetchBits()

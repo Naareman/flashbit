@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingOverlay: View {
     let step: Int
     @Binding var pulseAnimation: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -79,8 +80,8 @@ struct OnboardingOverlay: View {
                     Image(systemName: "arrow.down")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
-                        .scaleEffect(pulseAnimation ? 1.3 : 0.9)
-                        .offset(y: pulseAnimation ? 6 : -6)
+                        .scaleEffect(reduceMotion ? 1.0 : (pulseAnimation ? 1.3 : 0.9))
+                        .offset(y: reduceMotion ? 0 : (pulseAnimation ? 6 : -6))
                 }
                 .padding(.bottom, 95)
             }
@@ -97,14 +98,14 @@ struct OnboardingOverlay: View {
             Image(systemName: "hand.tap.fill")
                 .font(.system(size: 36))
                 .foregroundColor(.white)
-                .scaleEffect(pulseAnimation ? 1.2 : 0.85)
+                .scaleEffect(reduceMotion ? 1.0 : (pulseAnimation ? 1.2 : 0.85))
 
             Text(text)
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
-                .scaleEffect(pulseAnimation ? 1.05 : 0.95)
+                .scaleEffect(reduceMotion ? 1.0 : (pulseAnimation ? 1.05 : 0.95))
         }
-        .opacity(pulseAnimation ? 1.0 : 0.6)
+        .opacity(reduceMotion ? 1.0 : (pulseAnimation ? 1.0 : 0.6))
     }
 }

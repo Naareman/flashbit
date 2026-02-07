@@ -26,9 +26,17 @@ class RSSParser: NSObject, XMLParserDelegate {
         items = []
         let parser = XMLParser(data: data)
         parser.delegate = self
-        parser.parse()
+        guard parser.parse() else {
+            // Return any items parsed before the error
+            return items
+        }
         return items
     }
+
+    // Pre-compiled regex for image extraction
+    private static let imgSrcRegex: NSRegularExpression? = {
+        try? NSRegularExpression(pattern: "<img[^>]+src=[\"']([^\"']+)[\"']", options: .caseInsensitive)
+    }()
 
     // MARK: - XMLParserDelegate
 
@@ -114,11 +122,7 @@ class RSSParser: NSObject, XMLParserDelegate {
 
     /// Extracts first image URL from HTML content
     private func extractImageFromHTML(_ html: String) -> String? {
-        // Look for img src in HTML
-        let pattern = "<img[^>]+src=[\"']([^\"']+)[\"']"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
-            return nil
-        }
+        guard let regex = Self.imgSrcRegex else { return nil }
 
         let range = NSRange(html.startIndex..., in: html)
         if let match = regex.firstMatch(in: html, options: [], range: range),

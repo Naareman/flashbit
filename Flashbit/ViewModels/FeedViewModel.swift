@@ -5,6 +5,7 @@ class FeedViewModel: ObservableObject {
     @Published var bits: [Bit] = []
     @Published var isLoading: Bool = false
     @Published var error: Error?
+    @Published var errorMessage: String?
 
     private let newsService: NewsService
     private let storage: StorageService
@@ -39,6 +40,7 @@ class FeedViewModel: ObservableObject {
     func fetchFreshBits(onNewBits: @escaping @MainActor ([Bit]) -> Void) async {
         isLoading = bits.isEmpty
         error = nil
+        errorMessage = nil
 
         await newsService.fetchBitsProgressively { [weak self] updatedBits in
             guard let self = self else { return }
@@ -68,6 +70,7 @@ class FeedViewModel: ObservableObject {
                 onNewBits(unseen)
             } else {
                 error = URLError(.cannotLoadFromNetwork)
+                errorMessage = "Unable to load news. Check your connection."
             }
         }
 
