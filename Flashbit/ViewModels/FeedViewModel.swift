@@ -20,41 +20,56 @@ class FeedViewModel: ObservableObject {
         objectWillChange.send() // Trigger UI update
     }
 
-    func loadBits() async {
-        // Show cached data immediately if available
+    /// Loads cached bits immediately and returns true if there were cached bits to show
+    func loadCachedBits() -> Bool {
         if !storage.cachedBits.isEmpty {
             bits = filterBySelectedCategories(storage.cachedBits)
+            return true
         }
+        return false
+    }
 
-        // Only show loading indicator if no cached data
-        if bits.isEmpty {
-            isLoading = true
-        }
+    /// Fetches fresh bits from RSS feeds in the background.
+    /// Calls onNewBits each time a feed completes with newly unseen bits.
+    func fetchFreshBits(onNewBits: @escaping @MainActor ([Bit]) -> Void) async {
+        isLoading = bits.isEmpty
         error = nil
 
-        // Fetch progressively - updates come as each feed completes
         await newsService.fetchBitsProgressively { [weak self] updatedBits in
             guard let self = self else { return }
-            self.bits = self.filterBySelectedCategories(updatedBits)
+            let filtered = self.filterBySelectedCategories(updatedBits)
+            let newUnseen = filtered.filter { !self.storage.isSeen($0) }
+
+            // Find bits that weren't in the previous set
+            let previousIDs = Set(self.bits.compactMap { $0.articleURL?.absoluteString ?? "\($0.headline)|\($0.source)" })
+            let brandNew = newUnseen.filter {
+                let id = $0.articleURL?.absoluteString ?? "\($0.headline)|\($0.source)"
+                return !previousIDs.contains(id)
+            }
+
+            self.bits = filtered
             self.isLoading = false
+
+            if !brandNew.isEmpty {
+                onNewBits(brandNew)
+            }
         }
 
         // If still no bits after all feeds, fall back to mock data
         if bits.isEmpty {
             bits = filterBySelectedCategories(Self.mockBits)
+            let unseen = bits.filter { !storage.isSeen($0) }
+            if !unseen.isEmpty {
+                onNewBits(unseen)
+            }
         }
 
         isLoading = false
     }
 
-    func loadMoreBits() async {
-        // With caching, we have up to 500 articles already loaded
-    }
-
-    func refreshBits() async {
-        // Don't clear bits - keep showing cached while refreshing
+    func refreshBits(onNewBits: @escaping @MainActor ([Bit]) -> Void) async {
         isLoading = true
-        await loadBits()
+        await fetchFreshBits(onNewBits: onNewBits)
     }
 
     private func filterBySelectedCategories(_ bits: [Bit]) -> [Bit] {

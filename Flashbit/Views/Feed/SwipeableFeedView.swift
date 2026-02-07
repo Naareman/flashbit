@@ -176,12 +176,41 @@ struct SwipeableFeedView: View {
             }
         }
         .task {
-            await viewModel.loadBits()
-            sessionBits = viewModel.unseenBits
-            if !sessionBits.isEmpty {
-                sessionViewedIndices.insert(0)
+            // 1. Show cached bits immediately so user can start swiping
+            let hadCache = viewModel.loadCachedBits()
+            if hadCache {
+                sessionBits = viewModel.unseenBits
+                if !sessionBits.isEmpty {
+                    sessionViewedIndices.insert(0)
+                }
             }
             hasLoadedSession = true
+
+            // 2. Fetch fresh content in background, append new unseen bits as they arrive
+            await viewModel.fetchFreshBits { [self] newBits in
+                if sessionBits.isEmpty {
+                    // No cached content was available — this is the first batch
+                    sessionBits = newBits
+                    if !sessionBits.isEmpty {
+                        sessionViewedIndices.insert(0)
+                    }
+                } else {
+                    // Append new bits after the current position so feed grows while swiping
+                    let existingIDs = Set(sessionBits.map { $0.id })
+                    let toAdd = newBits.filter { !existingIDs.contains($0.id) }
+                    if !toAdd.isEmpty {
+                        sessionBits.append(contentsOf: toAdd)
+                    }
+                }
+            }
+
+            // 3. If still empty after everything, try unseen from whatever we have
+            if sessionBits.isEmpty {
+                sessionBits = viewModel.unseenBits
+                if !sessionBits.isEmpty {
+                    sessionViewedIndices.insert(0)
+                }
+            }
         }
         .onAppear {
             lightImpact.prepare()
@@ -242,7 +271,13 @@ struct SwipeableFeedView: View {
 
     private func refreshFeed() async {
         currentIndex = 0
-        await viewModel.refreshBits()
+        await viewModel.refreshBits { newBits in
+            let existingIDs = Set(sessionBits.map { $0.id })
+            let toAdd = newBits.filter { !existingIDs.contains($0.id) }
+            if !toAdd.isEmpty {
+                sessionBits.append(contentsOf: toAdd)
+            }
+        }
     }
 
     private func goToNext() {
