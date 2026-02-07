@@ -7,14 +7,12 @@ struct BitCardView: View {
     @State private var showingSafari = false
 
     // Layout constants
-    private let headlineFont = UIFont.systemFont(ofSize: 28, weight: .bold)
+    private let headlineFont = UIFont.systemFont(ofSize: AppConstants.headlineFontSize, weight: .bold)
     private let summaryFont = UIFont.preferredFont(forTextStyle: .body)
-    private let horizontalPadding: CGFloat = 48 // 24 on each side
-    private let maxSummaryLines = 5
 
     var body: some View {
         GeometryReader { geometry in
-            let availableWidth = geometry.size.width - horizontalPadding
+            let availableWidth = geometry.size.width - AppConstants.horizontalPadding
             let summaryConfig = calculateSummaryConfig(availableWidth: availableWidth)
 
             ZStack(alignment: .topLeading) {
@@ -24,12 +22,12 @@ struct BitCardView: View {
 
                 // Category badge - positioned below progress bar
                 CategoryBadge(category: bit.category)
-                    .padding(.top, 70) // Below the progress bar area
-                    .padding(.leading, 24)
+                    .padding(.top, AppConstants.categoryBadgeTopPadding)
+                    .padding(.leading, AppConstants.cardHorizontalPadding)
 
                 // Content overlay - anchored to bottom
                 VStack(alignment: .leading, spacing: 16) {
-                    Spacer(minLength: 20) // Allows content to expand upward
+                    Spacer(minLength: 20)
 
                     // Headline - tappable to open article
                     if bit.articleURL != nil {
@@ -38,7 +36,7 @@ struct BitCardView: View {
                         }) {
                             HStack(alignment: .top, spacing: 6) {
                                 Text(bit.headline)
-                                    .font(.system(size: 28, weight: .bold))
+                                    .font(.system(size: AppConstants.headlineFontSize, weight: .bold))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.leading)
                                 Image(systemName: "arrow.up.right")
@@ -50,7 +48,7 @@ struct BitCardView: View {
                         .shadow(radius: 2)
                     } else {
                         Text(bit.headline)
-                            .font(.system(size: 28, weight: .bold))
+                            .font(.system(size: AppConstants.headlineFontSize, weight: .bold))
                             .foregroundColor(.white)
                             .shadow(radius: 2)
                     }
@@ -80,9 +78,9 @@ struct BitCardView: View {
                             .fixedSize(horizontal: true, vertical: false)
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 100) // Start below category badge area
-                .padding(.bottom, 100) // Fixed padding above tab bar
+                .padding(.horizontal, AppConstants.cardHorizontalPadding)
+                .padding(.top, AppConstants.contentTopPadding)
+                .padding(.bottom, AppConstants.contentBottomPadding)
                 .background(
                     LinearGradient(
                         colors: [.clear, .clear, .black.opacity(0.7), .black.opacity(0.9)],
@@ -111,24 +109,20 @@ struct BitCardView: View {
     }
 
     private func calculateSummaryConfig(availableWidth: CGFloat) -> SummaryConfig {
-        // Check if summary is empty
         guard !bit.summary.isEmpty else {
             return SummaryConfig(showSummary: false, summaryText: "", summaryLines: 0)
         }
 
         let summaryLines = estimateLineCount(text: bit.summary, font: summaryFont, width: availableWidth)
 
-        // Summary fits completely within max lines
-        if summaryLines <= maxSummaryLines {
-            return SummaryConfig(showSummary: true, summaryText: bit.summary, summaryLines: maxSummaryLines)
+        if summaryLines <= AppConstants.maxSummaryLines {
+            return SummaryConfig(showSummary: true, summaryText: bit.summary, summaryLines: AppConstants.maxSummaryLines)
         }
 
-        // Summary is too long - try truncating at sentence boundary
-        if let truncated = truncateAtSentenceBoundary(bit.summary, maxLines: maxSummaryLines, font: summaryFont, width: availableWidth) {
-            return SummaryConfig(showSummary: true, summaryText: truncated, summaryLines: maxSummaryLines)
+        if let truncated = truncateAtSentenceBoundary(bit.summary, maxLines: AppConstants.maxSummaryLines, font: summaryFont, width: availableWidth) {
+            return SummaryConfig(showSummary: true, summaryText: truncated, summaryLines: AppConstants.maxSummaryLines)
         }
 
-        // No good sentence boundary - hide summary entirely
         return SummaryConfig(showSummary: false, summaryText: "", summaryLines: 0)
     }
 
@@ -147,13 +141,11 @@ struct BitCardView: View {
     }
 
     private func truncateAtSentenceBoundary(_ text: String, maxLines: Int, font: UIFont, width: CGFloat) -> String? {
-        // Find all sentence-ending positions (dots followed by space or end)
         var sentenceEnds: [String.Index] = []
         var searchStart = text.startIndex
 
         while let dotRange = text.range(of: ".", range: searchStart..<text.endIndex) {
             let dotIndex = dotRange.upperBound
-            // Check if it's end of string or followed by space (actual sentence end)
             if dotIndex == text.endIndex {
                 sentenceEnds.append(dotRange.upperBound)
             } else if text[dotIndex] == " " || text[dotIndex] == "\n" {
@@ -162,7 +154,6 @@ struct BitCardView: View {
             searchStart = dotIndex
         }
 
-        // Try each sentence boundary from longest to shortest
         for endIndex in sentenceEnds.reversed() {
             let truncated = String(text[..<endIndex]).trimmingCharacters(in: .whitespaces)
             let lines = estimateLineCount(text: truncated, font: font, width: width)
@@ -171,18 +162,15 @@ struct BitCardView: View {
             }
         }
 
-        return nil // No suitable sentence boundary found
+        return nil
     }
 
     @ViewBuilder
     private var backgroundView: some View {
         if let imageURL = bit.imageURL {
-            // Request higher resolution by using scale factor
             AsyncImage(url: imageURL, scale: 1.0) { phase in
                 switch phase {
                 case .success(let image):
-                    // Use fill to cover the area, with clipping to maintain aspect ratio
-                    // This crops overflow rather than stretching
                     GeometryReader { geo in
                         image
                             .resizable()
@@ -206,61 +194,10 @@ struct BitCardView: View {
 
     private var placeholderGradient: some View {
         LinearGradient(
-            colors: gradientColors(for: bit.category),
+            colors: bit.category.gradientColors,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-    }
-
-    private func gradientColors(for category: BitCategory) -> [Color] {
-        switch category {
-        case .breaking: return [.red, .orange]
-        case .tech: return [.blue, .purple]
-        case .business: return [.green, .teal]
-        case .sports: return [.orange, .yellow]
-        case .entertainment: return [.purple, .pink]
-        case .science: return [.cyan, .blue]
-        case .health: return [.pink, .red]
-        case .world: return [.indigo, .blue]
-        }
-    }
-}
-
-// MARK: - Safari View Wrapper
-
-struct SafariView: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        let config = SFSafariViewController.Configuration()
-        config.entersReaderIfAvailable = false
-        let safari = SFSafariViewController(url: url, configuration: config)
-        safari.preferredControlTintColor = .systemBlue
-        return safari
-    }
-
-    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
-}
-
-struct CategoryBadge: View {
-    let category: BitCategory
-
-    var body: some View {
-        Text(category.rawValue.uppercased())
-            .font(.caption2)
-            .fontWeight(.bold)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-    }
-}
-
-extension Date {
-    func timeAgoDisplay() -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: self, relativeTo: Date())
     }
 }
 

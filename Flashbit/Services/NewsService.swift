@@ -1,6 +1,6 @@
 import Foundation
 
-actor NewsService {
+actor NewsService: NewsServiceProtocol {
     private let session: URLSession
     private let rssParser = RSSParser()
 
@@ -19,7 +19,7 @@ actor NewsService {
     ]
 
     // How many items to fetch per source on first launch
-    private static let itemsPerSourceFirstFetch = 50
+    private static let itemsPerSourceFirstFetch = AppConstants.itemsPerSourceFirstFetch
 
     init() {
         let config = URLSessionConfiguration.default

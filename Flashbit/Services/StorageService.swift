@@ -1,7 +1,7 @@
 import Foundation
 
 /// Manages persistent storage for saved articles and user preferences
-class StorageService: ObservableObject {
+class StorageService: ObservableObject, StorageServiceProtocol {
     static let shared = StorageService()
 
     @Published var savedBits: [Bit] = []
@@ -28,9 +28,9 @@ class StorageService: ObservableObject {
     // Track which articles the user has already seen
     private var seenBitIds: Set<String> = [] // Using articleURL string as identifier
 
-    static let maxArticlesLimit = 500
-    static let minArticlesLimit = 20
-    static let defaultMaxArticles = 200
+    static let maxArticlesLimit = AppConstants.maxArticlesLimit
+    static let minArticlesLimit = AppConstants.minArticlesLimit
+    static let defaultMaxArticles = AppConstants.defaultMaxArticles
 
     @Published var maxCachedArticles: Int = 200
 

@@ -6,9 +6,8 @@ struct FlashbitApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        // Register background task
         BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.flashbit.app.refresh",
+            forTaskWithIdentifier: AppConstants.backgroundTaskIdentifier,
             using: nil
         ) { task in
             Self.handleBackgroundRefresh(task: task as! BGAppRefreshTask)
@@ -28,9 +27,8 @@ struct FlashbitApp: App {
     }
 
     private func scheduleBackgroundRefresh() {
-        let request = BGAppRefreshTaskRequest(identifier: "com.flashbit.app.refresh")
-        // Schedule to run in 15 minutes
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
+        let request = BGAppRefreshTaskRequest(identifier: AppConstants.backgroundTaskIdentifier)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: AppConstants.backgroundRefreshInterval)
 
         do {
             try BGTaskScheduler.shared.submit(request)
@@ -40,12 +38,10 @@ struct FlashbitApp: App {
     }
 
     private static func handleBackgroundRefresh(task: BGAppRefreshTask) {
-        // Schedule the next refresh
-        let request = BGAppRefreshTaskRequest(identifier: "com.flashbit.app.refresh")
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
+        let request = BGAppRefreshTaskRequest(identifier: AppConstants.backgroundTaskIdentifier)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: AppConstants.backgroundRefreshInterval)
         try? BGTaskScheduler.shared.submit(request)
 
-        // Create a task to fetch new articles
         let fetchTask = Task {
             do {
                 let newsService = NewsService()
@@ -56,7 +52,6 @@ struct FlashbitApp: App {
             }
         }
 
-        // Handle task expiration
         task.expirationHandler = {
             fetchTask.cancel()
             task.setTaskCompleted(success: false)

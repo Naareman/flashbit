@@ -17,6 +17,23 @@
 		A10008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20008; };
 		A10010 /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20010; };
 		A10011 /* RSSParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20011; };
+		A10012 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20012; };
+		A10013 /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20013; };
+		A10014 /* String+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20014; };
+		A10015 /* NewsServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20015; };
+		A10016 /* StorageServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20016; };
+		A10017 /* BitCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20017; };
+		A10018 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20018; };
+		A10019 /* SavedViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20019; };
+		A10020 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20020; };
+		A10021 /* CategoryBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20021; };
+		A10022 /* FilterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20022; };
+		A10023 /* SafariView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20023; };
+		A10024 /* BookmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20024; };
+		A10025 /* SavedBitCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20025; };
+		A10026 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20026; };
+		A10027 /* ManageCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20027; };
+		A10028 /* CategoryToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20028; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +47,23 @@
 		A20008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20010 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
 		A20011 /* RSSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParser.swift; sourceTree = "<group>"; };
+		A20012 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
+		A20013 /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
+		A20014 /* String+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extensions.swift"; sourceTree = "<group>"; };
+		A20015 /* NewsServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsServiceProtocol.swift; sourceTree = "<group>"; };
+		A20016 /* StorageServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageServiceProtocol.swift; sourceTree = "<group>"; };
+		A20017 /* BitCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitCategory.swift; sourceTree = "<group>"; };
+		A20018 /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
+		A20019 /* SavedViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedViewModel.swift; sourceTree = "<group>"; };
+		A20020 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
+		A20021 /* CategoryBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryBadge.swift; sourceTree = "<group>"; };
+		A20022 /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
+		A20023 /* SafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariView.swift; sourceTree = "<group>"; };
+		A20024 /* BookmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarksView.swift; sourceTree = "<group>"; };
+		A20025 /* SavedBitCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedBitCard.swift; sourceTree = "<group>"; };
+		A20026 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A20027 /* ManageCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageCategoriesView.swift; sourceTree = "<group>"; };
+		A20028 /* CategoryToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryToggleRow.swift; sourceTree = "<group>"; };
 		A30000 /* Flashbit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flashbit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -55,12 +89,12 @@
 		A50001 /* Flashbit */ = {
 			isa = PBXGroup;
 			children = (
-				A20001 /* FlashbitApp.swift */,
-				A20002 /* ContentView.swift */,
+				A50007 /* App */,
+				A50008 /* Core */,
 				A50002 /* Models */,
+				A50006 /* Services */,
 				A50003 /* ViewModels */,
 				A50004 /* Views */,
-				A50006 /* Services */,
 				A20008 /* Assets.xcassets */,
 			);
 			path = Flashbit;
@@ -70,6 +104,8 @@
 			isa = PBXGroup;
 			children = (
 				A20003 /* Bit.swift */,
+				A20017 /* BitCategory.swift */,
+				A20018 /* Tab.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -78,6 +114,8 @@
 			isa = PBXGroup;
 			children = (
 				A20004 /* FeedViewModel.swift */,
+				A20019 /* SavedViewModel.swift */,
+				A20020 /* SettingsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -85,8 +123,11 @@
 		A50004 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				A20006 /* BitCardView.swift */,
-				A20007 /* SwipeableFeedView.swift */,
+				A20002 /* ContentView.swift */,
+				A50012 /* Components */,
+				A50013 /* Feed */,
+				A50014 /* Saved */,
+				A50015 /* Settings */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -107,6 +148,88 @@
 				A20010 /* StorageService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		A50007 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A20001 /* FlashbitApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A50008 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				A50009 /* Constants */,
+				A50010 /* Extensions */,
+				A50011 /* Protocols */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		A50009 /* Constants */ = {
+			isa = PBXGroup;
+			children = (
+				A20012 /* AppConstants.swift */,
+			);
+			path = Constants;
+			sourceTree = "<group>";
+		};
+		A50010 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				A20013 /* Date+Extensions.swift */,
+				A20014 /* String+Extensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		A50011 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				A20015 /* NewsServiceProtocol.swift */,
+				A20016 /* StorageServiceProtocol.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
+		A50012 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A20021 /* CategoryBadge.swift */,
+				A20022 /* FilterChip.swift */,
+				A20023 /* SafariView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A50013 /* Feed */ = {
+			isa = PBXGroup;
+			children = (
+				A20006 /* BitCardView.swift */,
+				A20007 /* SwipeableFeedView.swift */,
+			);
+			path = Feed;
+			sourceTree = "<group>";
+		};
+		A50014 /* Saved */ = {
+			isa = PBXGroup;
+			children = (
+				A20024 /* BookmarksView.swift */,
+				A20025 /* SavedBitCard.swift */,
+			);
+			path = Saved;
+			sourceTree = "<group>";
+		};
+		A50015 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A20026 /* SettingsView.swift */,
+				A20027 /* ManageCategoriesView.swift */,
+				A20028 /* CategoryToggleRow.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -187,6 +310,23 @@
 				A10007 /* SwipeableFeedView.swift in Sources */,
 				A10010 /* StorageService.swift in Sources */,
 				A10011 /* RSSParser.swift in Sources */,
+				A10012 /* AppConstants.swift in Sources */,
+				A10013 /* Date+Extensions.swift in Sources */,
+				A10014 /* String+Extensions.swift in Sources */,
+				A10015 /* NewsServiceProtocol.swift in Sources */,
+				A10016 /* StorageServiceProtocol.swift in Sources */,
+				A10017 /* BitCategory.swift in Sources */,
+				A10018 /* Tab.swift in Sources */,
+				A10019 /* SavedViewModel.swift in Sources */,
+				A10020 /* SettingsViewModel.swift in Sources */,
+				A10021 /* CategoryBadge.swift in Sources */,
+				A10022 /* FilterChip.swift in Sources */,
+				A10023 /* SafariView.swift in Sources */,
+				A10024 /* BookmarksView.swift in Sources */,
+				A10025 /* SavedBitCard.swift in Sources */,
+				A10026 /* SettingsView.swift in Sources */,
+				A10027 /* ManageCategoriesView.swift in Sources */,
+				A10028 /* CategoryToggleRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
