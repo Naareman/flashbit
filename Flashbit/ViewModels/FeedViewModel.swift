@@ -48,11 +48,8 @@ class FeedViewModel: ObservableObject {
             let newUnseen = filtered.filter { !self.storage.isSeen($0) }
 
             // Find bits that weren't in the previous set
-            let previousIDs = Set(self.bits.compactMap { $0.articleURL?.absoluteString ?? "\($0.headline)|\($0.source)" })
-            let brandNew = newUnseen.filter {
-                let id = $0.articleURL?.absoluteString ?? "\($0.headline)|\($0.source)"
-                return !previousIDs.contains(id)
-            }
+            let previousIDs = Set(self.bits.map { $0.stableIdentifier })
+            let brandNew = newUnseen.filter { !previousIDs.contains($0.stableIdentifier) }
 
             self.bits = filtered
             self.isLoading = false

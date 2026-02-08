@@ -46,4 +46,12 @@ struct Bit: Identifiable, Codable, Sendable {
     var smartHeadline: String {
         headline.smartTruncate(maxLength: AppConstants.headlineTruncateMaxLength)
     }
+
+    /// Stable identifier for deduplication and seen-tracking (articleURL preferred, fallback to headline|source)
+    var stableIdentifier: String {
+        if let url = articleURL?.absoluteString {
+            return url
+        }
+        return "\(headline)|\(source)"
+    }
 }

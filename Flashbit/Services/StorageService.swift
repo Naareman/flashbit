@@ -1,9 +1,11 @@
 import Foundation
+import os
 
 /// Manages persistent storage for saved articles and user preferences
 @MainActor
 class StorageService: ObservableObject, StorageServiceProtocol {
     static let shared = StorageService()
+    private let logger = Logger(subsystem: "com.flashbit.app", category: "StorageService")
 
     @Published var savedBits: [Bit] = []
     @Published var cachedBits: [Bit] = []
@@ -88,8 +90,12 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     }
 
     private func persistSavedBits() {
-        guard let data = try? JSONEncoder().encode(savedBits) else { return }
-        UserDefaults.standard.set(data, forKey: savedBitsKey)
+        do {
+            let data = try JSONEncoder().encode(savedBits)
+            UserDefaults.standard.set(data, forKey: savedBitsKey)
+        } catch {
+            logger.error("Failed to persist savedBits: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Selected Categories
@@ -212,8 +218,12 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     }
 
     private func persistCachedBits() {
-        guard let data = try? JSONEncoder().encode(cachedBits) else { return }
-        UserDefaults.standard.set(data, forKey: cachedBitsKey)
+        do {
+            let data = try JSONEncoder().encode(cachedBits)
+            UserDefaults.standard.set(data, forKey: cachedBitsKey)
+        } catch {
+            logger.error("Failed to persist cachedBits: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Last Fetch Times (per source)
@@ -282,9 +292,11 @@ class StorageService: ObservableObject, StorageServiceProtocol {
         // Batch persistence: schedule a single write instead of writing per-mark
         if !seenBitIdsPendingPersist {
             seenBitIdsPendingPersist = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-                self?.seenBitIdsPendingPersist = false
-                self?.persistSeenBitIds()
+            Task {
+                try? await Task.sleep(for: .seconds(1.0))
+                seenBitIdsPendingPersist = false
+                pruneSeenBitIds()
+                persistSeenBitIds()
             }
         }
     }
@@ -301,11 +313,18 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     }
 
     private func bitIdentifier(for bit: Bit) -> String {
-        // Use articleURL as primary identifier, fallback to headline+source
-        if let url = bit.articleURL?.absoluteString {
-            return url
+        bit.stableIdentifier
+    }
+
+    /// Prune seenBitIds to prevent unbounded growth — keep only IDs matching cached bits
+    private func pruneSeenBitIds() {
+        let cachedIdentifiers = Set(cachedBits.map { bitIdentifier(for: $0) })
+        let before = seenBitIds.count
+        seenBitIds = seenBitIds.intersection(cachedIdentifiers)
+        let pruned = before - seenBitIds.count
+        if pruned > 0 {
+            logger.info("Pruned \(pruned) stale entries from seenBitIds")
         }
-        return "\(bit.headline)|\(bit.source)"
     }
 
     private func loadSeenBitIds() {
@@ -317,7 +336,11 @@ class StorageService: ObservableObject, StorageServiceProtocol {
     }
 
     private func persistSeenBitIds() {
-        guard let data = try? JSONEncoder().encode(seenBitIds) else { return }
-        UserDefaults.standard.set(data, forKey: seenBitIdsKey)
+        do {
+            let data = try JSONEncoder().encode(seenBitIds)
+            UserDefaults.standard.set(data, forKey: seenBitIdsKey)
+        } catch {
+            logger.error("Failed to persist seenBitIds: \(error.localizedDescription)")
+        }
     }
 }
