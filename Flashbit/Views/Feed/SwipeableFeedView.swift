@@ -30,6 +30,9 @@ struct SwipeableFeedView: View {
     // Track which bits user viewed this session (marked as seen when session ends)
     @State private var sessionViewedIndices: Set<Int> = []
 
+    // Swipe gesture state
+    @State private var dragOffset: CGFloat = 0
+
     // Onboarding state
     @State private var onboardingStep: OnboardingStep = .welcome
     @State private var pulseAnimation: Bool = false
@@ -120,12 +123,34 @@ struct SwipeableFeedView: View {
 
                 if !hasLoadedSession && !isOnboarding {
                     loadingView
-                } else if displayBits.isEmpty || isOnCaughtUpCard {
+                } else if displayBits.isEmpty {
                     CaughtUpCard()
-                } else if let bit = currentBit {
-                    BitCardView(bit: bit, isInteractive: !isOnboarding)
-                        .id(currentIndex)
-                        .transition(.opacity)
+                } else {
+                    // Current card (or caught-up card if past end)
+                    if let bit = currentBit {
+                        BitCardView(bit: bit, isInteractive: !isOnboarding)
+                            .offset(x: dragOffset)
+                    } else {
+                        CaughtUpCard()
+                            .offset(x: dragOffset)
+                    }
+
+                    // Next card slides in from right during left swipe
+                    if dragOffset < 0, currentIndex < displayBits.count {
+                        if currentIndex + 1 < displayBits.count {
+                            BitCardView(bit: displayBits[currentIndex + 1], isInteractive: false)
+                                .offset(x: dragOffset + geometry.size.width)
+                        } else {
+                            CaughtUpCard()
+                                .offset(x: dragOffset + geometry.size.width)
+                        }
+                    }
+
+                    // Previous card slides in from left during right swipe
+                    if dragOffset > 0, currentIndex > 0 {
+                        BitCardView(bit: displayBits[currentIndex - 1], isInteractive: false)
+                            .offset(x: dragOffset - geometry.size.width)
+                    }
                 }
 
                 // Error banner when fetch fails
@@ -144,7 +169,7 @@ struct SwipeableFeedView: View {
                     .accessibilityLabel(errorMessage)
                 }
 
-                // Tap zones - handles both single and double taps (only on article cards)
+                // Tap and swipe zones - handles taps, double taps, and swipe gestures
                 // Excludes bottom area to allow headline tap to open article
                 if currentBit != nil {
                     VStack(spacing: 0) {
@@ -164,6 +189,42 @@ struct SwipeableFeedView: View {
                             .frame(height: AppConstants.bottomExcludedTapZoneHeight)
                             .allowsHitTesting(false)
                     }
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { value in
+                                dragOffset = value.translation.width
+                            }
+                            .onEnded { value in
+                                let screenWidth = geometry.size.width
+                                if value.translation.width < -AppConstants.swipeThreshold && currentIndex < totalItems - 1 {
+                                    // Slide current card off left, next card slides to center
+                                    withAnimation(.easeOut(duration: AppConstants.navigationAnimationDuration)) {
+                                        dragOffset = -screenWidth
+                                    } completion: {
+                                        dragOffset = 0
+                                        currentIndex += 1
+                                        if currentIndex < sessionBits.count {
+                                            sessionViewedIndices.insert(currentIndex)
+                                        }
+                                    }
+                                    lightImpact.impactOccurred()
+                                } else if value.translation.width > AppConstants.swipeThreshold && currentIndex > 0 {
+                                    // Slide current card off right, previous card slides to center
+                                    withAnimation(.easeOut(duration: AppConstants.navigationAnimationDuration)) {
+                                        dragOffset = screenWidth
+                                    } completion: {
+                                        dragOffset = 0
+                                        currentIndex -= 1
+                                    }
+                                    lightImpact.impactOccurred()
+                                } else {
+                                    // Bounce back
+                                    withAnimation(.easeOut(duration: AppConstants.navigationAnimationDuration)) {
+                                        dragOffset = 0
+                                    }
+                                }
+                            }
+                    )
                 }
 
                 // Progress bar and remaining counter
@@ -322,9 +383,7 @@ struct SwipeableFeedView: View {
 
     private func goToNext() {
         if currentIndex < totalItems - 1 {
-            withAnimation(.easeInOut(duration: AppConstants.navigationAnimationDuration)) {
-                currentIndex += 1
-            }
+            currentIndex += 1
             lightImpact.impactOccurred()
             if currentIndex < sessionBits.count {
                 sessionViewedIndices.insert(currentIndex)
@@ -336,9 +395,7 @@ struct SwipeableFeedView: View {
 
     private func goToPrevious() {
         if currentIndex > 0 {
-            withAnimation(.easeInOut(duration: AppConstants.navigationAnimationDuration)) {
-                currentIndex -= 1
-            }
+            currentIndex -= 1
             lightImpact.impactOccurred()
         } else {
             mediumImpact.impactOccurred()

@@ -11,8 +11,8 @@ class SavedViewModel: ObservableObject {
 
     private let storage: StorageService
 
-    init(storage: StorageService = .shared) {
-        self.storage = storage
+    init(storage: StorageService? = nil) {
+        self.storage = storage ?? .shared
     }
 
     var filteredBits: [Bit] {

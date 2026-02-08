@@ -46,6 +46,7 @@ enum AppConstants {
     static let clearOnboardingDelay: TimeInterval = 0.4
     static let pulseAnimationDuration: TimeInterval = 0.8
     static let navigationAnimationDuration: TimeInterval = 0.2
+    static let swipeThreshold: CGFloat = 50
 
     // MARK: - Background Tasks
 

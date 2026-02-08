@@ -16,7 +16,7 @@ actor NewsService: NewsServiceProtocol {
     private static let feeds: [FeedConfig] = [
         FeedConfig(url: "https://feeds.bbci.co.uk/news/rss.xml", source: "BBC News", category: .world),
         FeedConfig(url: "https://www.theguardian.com/world/rss", source: "The Guardian", category: .world),
-        FeedConfig(url: "https://www.reutersagency.com/feed/?best-regions=europe&post_type=best", source: "Reuters", category: .world),
+        FeedConfig(url: "https://feeds.npr.org/1001/rss.xml", source: "NPR News", category: .world),
         FeedConfig(url: "https://techcrunch.com/feed/", source: "TechCrunch", category: .tech)
     ]
 
@@ -39,11 +39,11 @@ actor NewsService: NewsServiceProtocol {
         // Fetch all RSS feeds concurrently
         async let bbcBits = fetchRSSFeed(feed: Self.feeds[0], isFirstFetch: isFirstFetch)
         async let guardianBits = fetchRSSFeed(feed: Self.feeds[1], isFirstFetch: isFirstFetch)
-        async let reutersBits = fetchRSSFeed(feed: Self.feeds[2], isFirstFetch: isFirstFetch)
+        async let nprBits = fetchRSSFeed(feed: Self.feeds[2], isFirstFetch: isFirstFetch)
         async let techCrunchBits = fetchRSSFeed(feed: Self.feeds[3], isFirstFetch: isFirstFetch)
 
         // Combine all results
-        let allResults = await [bbcBits, guardianBits, reutersBits, techCrunchBits]
+        let allResults = await [bbcBits, guardianBits, nprBits, techCrunchBits]
         var newBits: [Bit] = []
         var successCount = 0
 

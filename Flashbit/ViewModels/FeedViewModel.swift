@@ -10,9 +10,9 @@ class FeedViewModel: ObservableObject {
     private let newsService: NewsService
     private let storage: StorageService
 
-    init(newsService: NewsService = NewsService(), storage: StorageService = .shared) {
+    init(newsService: NewsService = NewsService(), storage: StorageService? = nil) {
         self.newsService = newsService
-        self.storage = storage
+        self.storage = storage ?? .shared
     }
 
     /// Returns only the bits the user hasn't seen yet

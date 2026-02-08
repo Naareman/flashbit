@@ -7,8 +7,8 @@ class SettingsViewModel: ObservableObject {
     private let storage: StorageService
     private var sliderDebounceTask: Task<Void, Never>?
 
-    init(storage: StorageService = .shared) {
-        self.storage = storage
+    init(storage: StorageService? = nil) {
+        self.storage = storage ?? .shared
     }
 
     func loadSettings() {
